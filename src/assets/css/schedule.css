@@ -1,0 +1,425 @@
+/* Medicare ERP - Doctor Schedule Page Styles */
+
+/* Slot Category Colors */
+:root {
+  --consultation-bg: #e0f7fa;
+  --consultation-border: #00bcd4;
+  --consultation-text: #083344;
+  
+  --surgery-bg: #e3f2fd;
+  --surgery-border: #2196f3;
+  --surgery-text: #1e3a8a;
+  
+  --followup-bg: #f3e5f5;
+  --followup-border: #9c27b0;
+  --followup-text: #3b0764;
+  
+  --tests-bg: #fffde7;
+  --tests-border: #ffeb3b;
+  --tests-text: #422006;
+  
+  --ward-bg: #f1f5f9;
+  --ward-border: #64748b;
+  --ward-text: #0f172a;
+}
+
+/* Schedule Navigator Toolbar */
+.schedule-nav-group {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background-color: var(--card-bg);
+}
+
+.schedule-nav-btn {
+  background: none;
+  border: none;
+  padding: 0.625rem 1rem;
+  color: var(--text-main);
+  font-weight: 600;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: background-color 0.2s;
+}
+
+.schedule-nav-btn:hover {
+  background-color: #f8f9fa;
+}
+
+.schedule-nav-btn:not(:last-child) {
+  border-right: 1px solid var(--border-color);
+}
+
+.schedule-date-range {
+  font-weight: 500;
+  color: var(--text-main);
+  padding: 0.625rem 1.5rem;
+  font-size: 0.9rem;
+  min-width: 180px;
+  text-align: center;
+  border-right: 1px solid var(--border-color);
+}
+
+/* Calendar Grid Wrapper */
+.calendar-wrapper {
+  overflow-x: auto;
+  border-radius: 0.75rem;
+}
+
+.calendar-grid {
+  min-width: 900px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Day Header */
+.grid-header {
+  display: flex;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.grid-header-cell {
+  flex: 1;
+  text-align: center;
+  padding: 1rem 0;
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: #ffffff;
+}
+
+.grid-header-cell:last-child {
+  border-right: none;
+}
+
+.grid-header-cell.time-header {
+  flex: 0 0 100px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+}
+
+.day-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.date-label {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-top: 2px;
+  line-height: 1.1;
+}
+
+/* Active Day Header Styles */
+.grid-header-cell.active-day {
+  border-top: 3px solid var(--primary-color);
+  padding-top: calc(1rem - 3px);
+}
+
+.grid-header-cell.active-day .day-label,
+.grid-header-cell.active-day .date-label {
+  color: var(--primary-color);
+}
+
+/* Grid Body */
+.grid-body {
+  display: flex;
+  background-color: #ffffff;
+  position: relative;
+}
+
+.time-column {
+  flex: 0 0 100px;
+  border-right: 1px solid var(--border-color);
+  background-color: #ffffff;
+  z-index: 20;
+}
+
+.time-slot-label {
+  height: 80px; /* Each hour represents 80px */
+  position: relative;
+}
+
+.time-slot-label span {
+  position: absolute;
+  top: -8px;
+  right: 12px;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.day-column-container {
+  flex: 1;
+  display: flex;
+  position: relative;
+  height: 800px; /* 10 hours * 80px */
+}
+
+.day-column {
+  flex: 1;
+  position: relative;
+  height: 100%;
+  border-right: 1px solid var(--border-color);
+  /* Generate grid lines automatically using linear-gradient */
+  background-image: linear-gradient(to bottom, var(--border-color) 1px, transparent 1px);
+  background-size: 100% 80px;
+}
+
+.day-column:last-child {
+  border-right: none;
+}
+
+/* Current Time Indicator Overlay */
+.time-indicator-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--primary-color);
+  z-index: 50;
+  pointer-events: none;
+}
+
+.time-indicator-dot {
+  position: absolute;
+  left: -5px;
+  top: -4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: var(--primary-color);
+  box-shadow: 0 0 0 4px rgba(9, 99, 226, 0.2);
+  z-index: 51;
+}
+
+/* Appointment Blocks (Schedule Event Cards) */
+.schedule-event {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+  z-index: 10;
+}
+
+.schedule-event:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  z-index: 30;
+}
+
+.event-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.event-time {
+  font-size: 0.72rem;
+  font-weight: 500;
+  opacity: 0.85;
+  margin-bottom: 8px;
+}
+
+.event-meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  margin-top: auto;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* Dot Status Colors */
+.status-dot.dot-booked {
+  background-color: #22c55e;
+}
+
+.status-dot.dot-available {
+  background-color: #94a3b8;
+}
+
+.status-dot.dot-urgent {
+  background-color: #ef4444;
+}
+
+.status-dot.dot-priority {
+  background-color: #ffb300;
+}
+
+/* Category Specific Styles */
+.event-consultation {
+  background-color: var(--consultation-bg);
+  border-left: 4px solid var(--consultation-border);
+  color: var(--consultation-text);
+}
+
+.event-surgery {
+  background-color: var(--surgery-bg);
+  border-left: 4px solid var(--surgery-border);
+  color: var(--surgery-text);
+}
+
+.event-followup {
+  background-color: var(--followup-bg);
+  border-left: 4px solid var(--followup-border);
+  color: var(--followup-text);
+}
+
+.event-tests {
+  background-color: var(--tests-bg);
+  border-left: 4px solid var(--tests-border);
+  color: var(--tests-text);
+}
+
+.event-ward_rounds {
+  background-color: var(--ward-bg);
+  border-left: 4px solid var(--ward-border);
+  color: var(--ward-text);
+}
+
+/* Legend Section Styles */
+.legend-section {
+  border-top: 1px solid var(--border-color);
+  padding: 1.25rem 2rem;
+  background-color: #ffffff;
+  border-bottom-left-radius: 0.75rem;
+  border-bottom-right-radius: 0.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.legend-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.legend-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.legend-checkbox-label input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.color-indicator-box {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  display: inline-block;
+}
+
+.legend-status {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.status-indicator-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* Responsive Overrides */
+@media (max-width: 768px) {
+  .doctor-card-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.5rem;
+  }
+  
+  .doctor-card-content .action-section {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: space-between;
+  }
+  
+  .schedule-nav-group {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .schedule-date-range {
+    flex-grow: 1;
+    min-width: unset;
+  }
+  
+  .legend-section {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .legend-filters, .legend-status {
+    width: 100%;
+  }
+}
+
+/* Custom Scrollbar for Calendar Wrapper */
+.calendar-wrapper::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+
+.calendar-wrapper::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.calendar-wrapper::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.calendar-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
