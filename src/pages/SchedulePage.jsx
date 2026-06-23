@@ -1,9 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { getDoctorInfo, getScheduleSlots, saveScheduleSlot, deleteScheduleSlot } from '../services/api';
+import { doctors } from '../data/doctorsData';
 import doctorAvatar from '../assets/img/doctor-avatar.png';
 import '../assets/css/schedule.css';
+import '../assets/css/doctors.css';
 
 function SchedulePage() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  
   // 1. Component States
   const [doctor, setDoctor] = useState({ name: '-', specialty: '-', id: '-', status: '-' });
   const [slots, setSlots] = useState([]);
@@ -39,14 +45,19 @@ function SchedulePage() {
   // 2. Fetch Data Lifecycle
   useEffect(() => {
     async function loadData() {
-      const docData = await getDoctorInfo();
-      setDoctor(docData);
+      const selectedDoc = doctors.find(d => d.id === id);
+      if (selectedDoc) {
+        setDoctor(selectedDoc);
+      } else {
+        const docData = await getDoctorInfo();
+        setDoctor(docData);
+      }
       
       const slotsData = await getScheduleSlots();
       setSlots(slotsData);
     }
     loadData();
-  }, []);
+  }, [id]);
 
   // 3. Date Math Helpers
   const navigateWeek = (direction) => {
@@ -181,16 +192,25 @@ function SchedulePage() {
   return (
     <>
       {/* Title & Breadcrumbs */}
-      <div className="row mb-4">
-        <div className="col-12">
-          <h1 className="page-title">Doctor Schedule</h1>
-          <nav className="breadcrumb-custom" aria-label="breadcrumb">
-            <span className="text-muted">Doctors</span>
-            <span className="mx-2">&gt;</span>
-            <span className="text-muted">Dr. Sarah Johnson</span>
-            <span className="mx-2">&gt;</span>
-            <span className="active">Schedule</span>
-          </nav>
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <div className="d-flex align-items-center gap-2">
+          <button 
+            className="btn btn-link p-0 text-dark" 
+            onClick={() => navigate(`/doctors/details/${doctor.id}`)}
+            title="Back to Doctor Details"
+          >
+            <i className="bi bi-arrow-left fs-3"></i>
+          </button>
+          <div>
+            <h1 className="page-title mb-1" style={{ fontSize: '1.75rem' }}>Doctor Schedule</h1>
+            <nav className="breadcrumb-custom" aria-label="breadcrumb">
+              <span className="text-muted" style={{ cursor: 'pointer' }} onClick={() => navigate('/doctors')}>Doctors</span>
+              <span className="mx-2">&gt;</span>
+              <span className="text-muted" style={{ cursor: 'pointer' }} onClick={() => navigate(`/doctors/details/${doctor.id}`)}>{doctor.name}</span>
+              <span className="mx-2">&gt;</span>
+              <span className="active">Schedule</span>
+            </nav>
+          </div>
         </div>
       </div>
       
@@ -217,7 +237,15 @@ function SchedulePage() {
               <button className="schedule-nav-btn" onClick={() => navigateWeek(1)}><i className="bi bi-chevron-right"></i></button>
             </div>
             
-            <button className="btn-medicore" onClick={handleOpenAddBtn}>
+            <button 
+              className="btn btn-outline-primary"
+              onClick={() => navigate(`/doctors/${doctor.id}/performance`)}
+              style={{ fontWeight: 600, fontSize: '0.875rem', height: '38px', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
+            >
+              <i className="bi bi-bar-chart"></i> View Performance
+            </button>
+            
+            <button className="btn-medicore" onClick={handleOpenAddBtn} style={{ height: '38px' }}>
               <i className="bi bi-plus-lg"></i> Add Slot
             </button>
           </div>

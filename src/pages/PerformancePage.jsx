@@ -1,13 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import Chart from 'chart.js/auto';
 import TopNavbar from '../components/TopNavbar';
 import { getDoctorInfo, getKPIMetrics, getTopServices, getFeedbackSummary, getAppointmentsTrend, getRevenueTrend } from '../services/api';
+import { doctors } from '../data/doctorsData';
 import doctorAvatar from '../assets/img/doctor-avatar.png';
 import '../assets/css/performance.css';
 
 function PerformancePage() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+
+  // Find the doctor from doctorsData.js.
+  // Do not fallback to doctors[0] if id is not found or not provided.
+  const doctor = id ? doctors.find(doc => doc.id === id) : null;
+
   // 1. Local States
-  const [doctor, setDoctor] = useState({ name: '-', specialty: '-', id: '-', status: '-' });
   const [timeRange, setTimeRange] = useState("This Month");
   const [metrics, setMetrics] = useState(null);
   const [services, setServices] = useState([]);
@@ -24,8 +32,7 @@ function PerformancePage() {
   // 2. Fetch Data Lifecycle
   useEffect(() => {
     async function loadInitialData() {
-      const docData = await getDoctorInfo();
-      setDoctor(docData);
+      if (!doctor) return;
 
       const servicesData = await getTopServices();
       setServices(servicesData);
@@ -34,20 +41,22 @@ function PerformancePage() {
       setFeedback(feedbackData);
     }
     loadInitialData();
-  }, []);
+  }, [doctor]);
 
   // Fetch metrics when timeRange changes
   useEffect(() => {
     async function loadMetrics() {
+      if (!doctor) return;
       const metricsData = await getKPIMetrics(timeRange);
       setMetrics(metricsData);
     }
     loadMetrics();
-  }, [timeRange]);
+  }, [timeRange, doctor]);
 
   // Render/Re-render charts when components mount or data changes
   useEffect(() => {
     async function renderCharts() {
+      if (!doctor) return;
       const appTrendData = await getAppointmentsTrend();
       const revTrendData = await getRevenueTrend();
 
@@ -210,7 +219,7 @@ function PerformancePage() {
       if (appointmentsChartRef.current) appointmentsChartRef.current.destroy();
       if (revenueChartRef.current) revenueChartRef.current.destroy();
     };
-  }, []);
+  }, [doctor]);
 
   const formatCurrency = (val) => {
     return new Intl.NumberFormat("en-US", {
@@ -232,19 +241,71 @@ function PerformancePage() {
     );
   };
 
+  const handleBack = () => {
+    if (doctor && doctor.id) {
+      navigate(`/doctors/details/${doctor.id}`);
+    } else {
+      navigate('/doctors');
+    }
+  };
+
+  if (!doctor) {
+    return (
+      <>
+        {/* Top Navbar & Page Header breadcrumb flex row */}
+        <div className="top-navbar">
+          <div>
+            <h1 className="page-title">Doctor Not Found</h1>
+            <nav className="breadcrumb-custom" aria-label="breadcrumb">
+              <span className="text-muted" style={{ cursor: 'pointer' }} onClick={() => navigate('/doctors')}>Doctors</span>
+              <span className="mx-2">&gt;</span>
+              <span className="active">Not Found</span>
+            </nav>
+          </div>
+          <TopNavbar />
+        </div>
+
+        <div className="card p-5 text-center mt-4 shadow-sm" style={{ backgroundColor: 'var(--card-bg)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+          <div className="mb-4">
+            <i className="bi bi-exclamation-triangle text-warning" style={{ fontSize: '3.5rem' }}></i>
+          </div>
+          <h3 className="mb-2" style={{ fontWeight: 700, color: 'var(--text-main)' }}>Doctor Profile Not Found</h3>
+          <p className="text-muted mb-4" style={{ fontSize: '0.95rem' }}>
+            The doctor with ID <strong className="text-dark">{id || 'unknown'}</strong> could not be found in our records.
+          </p>
+          <div>
+            <button className="btn btn-primary px-4 py-2" onClick={() => navigate('/doctors')} style={{ fontWeight: 600, fontSize: '0.9rem' }}>
+              <i className="bi bi-arrow-left me-2"></i> Return to Doctors List
+            </button>
+          </div>
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       {/* Top Navbar & Page Header breadcrumb flex row */}
       <div className="top-navbar">
-        <div>
-          <h1 className="page-title">Doctor Performance</h1>
-          <nav className="breadcrumb-custom" aria-label="breadcrumb">
-            <span className="text-muted">Doctors</span>
-            <span className="mx-2">&gt;</span>
-            <span className="text-muted">Dr. Sarah Johnson</span>
-            <span className="mx-2">&gt;</span>
-            <span className="active">Performance</span>
-          </nav>
+        <div className="d-flex align-items-center gap-3">
+          <button 
+            className="btn btn-link p-0 text-dark" 
+            onClick={handleBack}
+            title="Back to Doctor Details"
+            style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}
+          >
+            <i className="bi bi-arrow-left fs-3"></i>
+          </button>
+          <div>
+            <h1 className="page-title mb-0">Doctor Performance</h1>
+            <nav className="breadcrumb-custom" aria-label="breadcrumb">
+              <span className="text-muted" style={{ cursor: 'pointer' }} onClick={() => navigate('/doctors')}>Doctors</span>
+              <span className="mx-2">&gt;</span>
+              <span className="text-muted" style={{ cursor: 'pointer' }} onClick={handleBack}>{doctor.name}</span>
+              <span className="mx-2">&gt;</span>
+              <span className="active">Performance</span>
+            </nav>
+          </div>
         </div>
         <TopNavbar />
       </div>
@@ -252,7 +313,15 @@ function PerformancePage() {
       {/* Doctor Summary Header Card */}
       <div className="card doctor-card p-4 mb-4">
         <div className="doctor-card-content d-flex align-items-center gap-3">
-          <img src={doctorAvatar} id="doctor-avatar" className="doctor-profile-img" alt={doctor.name} />
+          <img 
+            src={doctor.avatar || doctorAvatar} 
+            id="doctor-avatar" 
+            className="doctor-profile-img" 
+            alt={doctor.name} 
+            onError={(e) => {
+              e.target.src = doctorAvatar;
+            }}
+          />
           <div>
             <div className="d-flex align-items-center gap-2">
               <h2 className="doctor-name mb-0">{doctor.name}</h2>

@@ -67,7 +67,51 @@ let scheduleSlots = [
   }
 ];
 
-// 2. Initial Appointment Details Data
+// 2. Initial Appointments Database
+export let appointments = [
+  {
+    id: "APT-1001",
+    patientName: "John Doe",
+    dateTime: "2024-05-22T10:00:00",
+    type: "Consultation",
+    doctorId: "DOC-1001",
+    status: "CONFIRMED"
+  },
+  {
+    id: "APT-1002",
+    patientName: "Linda Davis",
+    dateTime: "2024-05-19T13:00:00",
+    type: "ECG & Tests",
+    doctorId: "DOC-1002",
+    status: "COMPLETED"
+  },
+  {
+    id: "APT-1003",
+    patientName: "Alice Smith",
+    dateTime: "2024-05-21T08:00:00",
+    type: "Surgery",
+    doctorId: "DOC-1003",
+    status: "CONFIRMED"
+  },
+  {
+    id: "APT-1004",
+    patientName: "Mark T.",
+    dateTime: "2024-05-21T14:00:00",
+    type: "Follow-up",
+    doctorId: "DOC-1004",
+    status: "CONFIRMED"
+  },
+  {
+    id: "APT-1005",
+    patientName: "Robert W.",
+    dateTime: "2024-05-22T10:30:00",
+    type: "Consultation",
+    doctorId: "DOC-1005",
+    status: "CONFIRMED"
+  }
+];
+
+// 3. Initial Appointment Details Data
 let appointmentDetails = {
   id: "APT-1001",
   status: "CONFIRMED", // CONFIRMED, CANCELLED
@@ -247,7 +291,13 @@ export const getRevenueTrend = async () => {
 export const getAppointmentDetails = async (id) => {
   return new Promise((resolve) => {
     setTimeout(() => {
-      resolve({ ...appointmentDetails });
+      const appt = appointments.find(a => a.id === id);
+      const currentStatus = appt ? appt.status : "CONFIRMED";
+      resolve({ 
+        ...appointmentDetails,
+        id,
+        status: currentStatus
+      });
     }, 50);
   });
 };
@@ -255,19 +305,12 @@ export const getAppointmentDetails = async (id) => {
 export const updateAppointmentStatus = async (id, status) => {
   return new Promise((resolve) => {
     setTimeout(() => {
-      appointmentDetails.status = status;
-      if (status === "CANCELLED") {
-        // Toggle current timeline checks
-        appointmentDetails.timeline.forEach(t => t.current = false);
-        // Append cancel audit event
-        appointmentDetails.timeline.push({
-          status: "Appointment Cancelled",
-          timestamp: "22 May 2024, 10:05 AM",
-          actor: "ADMIN USER",
-          completed: true,
-          current: true,
-          isCancelled: true
-        });
+      const appt = appointments.find(a => a.id === id);
+      if (appt) {
+        appt.status = status;
+      }
+      if (id === appointmentDetails.id || id === "APT-1001") {
+        appointmentDetails.status = status;
       }
       resolve({ success: true, status });
     }, 100);
