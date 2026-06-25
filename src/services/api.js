@@ -1,4 +1,6 @@
 // Medicare ERP - Backend-ready Mock Service Layer
+import { useErpStore } from '../store/erpStore';
+
 
 // 1. Initial Schedule Data
 let scheduleSlots = [
@@ -273,3 +275,133 @@ export const updateAppointmentStatus = async (id, status) => {
     }, 100);
   });
 };
+
+// 4. Department Async APIs
+export const getDepartments = async () => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve(useErpStore.getState().departments);
+    }, 50);
+  });
+};
+
+export const getDepartmentById = async (id) => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const dept = useErpStore.getState().departments.find(d => d.id === id);
+      resolve(dept || null);
+    }, 50);
+  });
+};
+
+export const createDepartment = async (deptData, subDeptsList = []) => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const newDept = useErpStore.getState().addDepartment(deptData, subDeptsList);
+      resolve({ success: true, department: newDept });
+    }, 100);
+  });
+};
+
+export const updateDepartment = async (id, deptData) => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      useErpStore.getState().updateDepartment(id, deptData);
+      const updated = useErpStore.getState().departments.find(d => d.id === id);
+      resolve({ success: true, department: updated });
+    }, 100);
+  });
+};
+
+export const deleteDepartment = async (id) => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      useErpStore.getState().deleteDepartment(id);
+      resolve({ success: true });
+    }, 100);
+  });
+};
+
+export const getSubDepartmentsByDeptId = async (deptId) => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const subs = (useErpStore.getState().subDepartments || []).filter(sub => sub.departmentId === deptId);
+      resolve(subs);
+    }, 50);
+  });
+};
+
+export const createSubDepartment = async (deptId, subDeptData) => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const newSub = useErpStore.getState().addSubDepartment(deptId, subDeptData.name, subDeptData.code);
+      resolve(newSub);
+    }, 100);
+  });
+};
+
+export const updateSubDepartmentApi = async (id, subDeptData) => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      useErpStore.getState().updateSubDepartment(id, subDeptData.name, subDeptData.code);
+      const updated = (useErpStore.getState().subDepartments || []).find(sub => sub.id === id);
+      resolve(updated);
+    }, 100);
+  });
+};
+
+export const deleteSubDepartmentApi = async (id) => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      useErpStore.getState().deleteSubDepartment(id);
+      resolve({ success: true });
+    }, 100);
+  });
+};
+
+export const getEmployees = async () => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve(useErpStore.getState().employees);
+    }, 50);
+  });
+};
+
+export const getEmployeeById = async (id) => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const emp = useErpStore.getState().employees.find(e => e.id === id);
+      resolve(emp || null);
+    }, 50);
+  });
+};
+
+export const createEmployee = async (employeeData) => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const newEmp = useErpStore.getState().addEmployee(employeeData);
+      resolve({ success: true, employee: newEmp });
+    }, 100);
+  });
+};
+
+export const updateEmployee = async (id, employeeData) => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      useErpStore.getState().updateEmployee(id, employeeData);
+      const updated = useErpStore.getState().employees.find(e => e.id === id);
+      resolve({ success: true, employee: updated });
+    }, 100);
+  });
+};
+
+export const deleteEmployee = async (id) => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      useErpStore.getState().deleteEmployee(id);
+      resolve({ success: true });
+    }, 100);
+  });
+};
+
+

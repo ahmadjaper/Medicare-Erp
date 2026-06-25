@@ -1,53 +1,34 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import TopNavbar from '../components/TopNavbar';
-import { getAppointmentDetails, updateAppointmentStatus } from '../services/api';
+import { useErpStore } from '../store/erpStore';
 import patientAvatar from '../assets/img/patient-avatar.png';
 import doctorAvatar from '../assets/img/doctor-avatar.png';
 import '../assets/css/details.css';
 
 function ApptDetailsPage() {
   const navigate = useNavigate();
+  const { id } = useParams();
+  const { appointments, patients, doctors, cancelAppointment } = useErpStore();
 
-  // 1. Component State
-  const [apptData, setApptData] = useState(null);
+  const apptData = appointments.find(a => a.id === id);
 
-  // 2. Fetch Data Lifecycle
-  useEffect(() => {
-    async function loadData() {
-      const data = await getAppointmentDetails("APT-1001");
-      setApptData(data);
-    }
-    loadData();
-  }, []);
-
-  // 3. Status Action Handler
-  const handleCancelAppointment = async () => {
+  const handleCancelAppointment = () => {
     if (!apptData || apptData.status === "CANCELLED") return;
-
-    if (window.confirm("Are you sure you want to cancel this appointment?")) {
-      const res = await updateAppointmentStatus(apptData.id, "CANCELLED");
-      if (res.success) {
-        // Fetch updated status
-        const updatedData = await getAppointmentDetails("APT-1001");
-        setApptData(updatedData);
-        alert("Appointment status updated to CANCELLED successfully.");
-      }
-    }
+    cancelAppointment(apptData.id);
   };
 
   const handleEditAppointment = () => {
-    alert("Opening Edit Appointment panel... (REST integration ready)");
+    useErpStore.getState().showToast("Opening Edit Appointment panel... (REST integration ready)", "info");
   };
 
   const handleBookNext = (e) => {
     e.preventDefault();
-    // Navigate reactive-ly to /schedule
-    navigate("/schedule");
+    navigate("/schedules");
   };
 
-  // 4. Utility Formatters
   const formatDateTimeStr = (isoString) => {
+    if (!isoString) return "-";
     const dateObj = new Date(isoString);
     const options = { day: 'numeric', month: 'long', year: 'numeric' };
     const datePart = dateObj.toLocaleDateString('en-US', options);
@@ -62,6 +43,7 @@ function ApptDetailsPage() {
   };
 
   const formatCurrency = (value) => {
+    if (value === undefined) return "$0.00";
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD"
@@ -78,6 +60,29 @@ function ApptDetailsPage() {
     );
   }
 
+  // Resolve matching patient and doctor
+  const patient = patients.find(p => p.name === apptData.patientName) || {
+    id: apptData.patientId || "PAT-1201",
+    name: apptData.patientName,
+    age: 35,
+    gender: "Male",
+    phone: "+1 (555) 123-4567",
+    email: "john.doe@email.com",
+    address: "123 Medical Center Dr, Cityville",
+    bloodGroup: "O+",
+    allergies: "Peanuts, Penicillin",
+    history: "Hypertension (controlled)"
+  };
+
+  const assignedDoctor = doctors.find(d => d.name === apptData.doctorName) || {
+    name: apptData.doctorName,
+    specialty: "Cardiology",
+    rating: 4.8,
+    reviewsCount: 120,
+    phone: "+1 (555) 101-0101",
+    email: "doctor@medicore.com"
+  };
+
   return (
     <>
       {/* Top Navbar & Header Breadcrumbs */}
@@ -91,8 +96,7 @@ function ApptDetailsPage() {
           </nav>
         </div>
         
-        {/* Renders right-hand search navbar, including the chat/message bubble */}
-        <TopNavbar showChat={true} showUserRole={true} />
+        <TopNavbar showUserRole={true} />
       </div>
 
       {/* Main Title Row & Actions */}
@@ -130,7 +134,7 @@ function ApptDetailsPage() {
               <div className="card dashboard-card p-4 h-100">
                 <div className="card-header-caps">
                   <span>Appointment Info</span>
-                  <span className={apptData.status === "CONFIRMED" ? "badge-confirmed" : "badge-cancelled"}>
+                  <span className={apptData.status === "CONFIRMED" || apptData.status === "Checked In" ? "badge-confirmed" : "badge-cancelled"}>
                     {apptData.status}
                   </span>
                 </div>
@@ -140,7 +144,7 @@ function ApptDetailsPage() {
                 </div>
                 <div className="info-list-row">
                   <span className="info-label">Date & Time</span>
-                  <span className="info-value">{formatDateTimeStr(apptData.dateTime)}</span>
+                  <span className="info-value">{apptData.time} ({formatDateTimeStr(apptData.dateTime)})</span>
                 </div>
                 <div className="info-list-row">
                   <span className="info-label">Type</span>
@@ -158,20 +162,20 @@ function ApptDetailsPage() {
               <div className="card dashboard-card p-4 h-100">
                 <div className="card-header-caps">
                   <span>Payment Details</span>
-                  <span className="badge-paid">{apptData.payment.status}</span>
+                  <span className="badge-paid">{apptData.payment?.status || "PENDING"}</span>
                 </div>
                 <div className="d-flex align-items-baseline gap-2 mb-3">
                   <span className="fs-2 fw-bold text-dark" style={{ fontWeight: 800 }}>
-                    {formatCurrency(apptData.payment.amount)}
+                    {formatCurrency(apptData.payment?.amount)}
                   </span>
                 </div>
                 <div className="info-list-row">
                   <span className="info-label">Method</span>
-                  <span className="info-value">{apptData.payment.method}</span>
+                  <span className="info-value">{apptData.payment?.method || "-"}</span>
                 </div>
                 <div className="info-list-row">
                   <span className="info-label">Transaction ID</span>
-                  <span className="info-value">{apptData.payment.transactionId}</span>
+                  <span className="info-value">{apptData.payment?.transactionId || "-"}</span>
                 </div>
               </div>
             </div>
@@ -180,15 +184,15 @@ function ApptDetailsPage() {
           {/* Patient Card */}
           <div className="card dashboard-card p-4 mb-4">
             <div className="d-flex align-items-center gap-3 mb-4">
-              <img src={patientAvatar} id="patient-avatar" className="patient-avatar-img" alt={apptData.patient.name} />
+              <img src={patientAvatar} id="patient-avatar" className="patient-avatar-img" alt={patient.name} />
               <div>
                 <div className="d-flex align-items-center gap-2">
-                  <h3 className="fw-bold mb-0 fs-4 text-dark">{apptData.patient.name}</h3>
-                  <a href="#" className="text-muted" aria-label="Open Patient Card" onClick={(e) => { e.preventDefault(); alert("Opening patient record details..."); }}>
+                  <h3 className="fw-bold mb-0 fs-4 text-dark">{patient.name}</h3>
+                  <a href="#" className="text-muted" aria-label="Open Patient Card" onClick={(e) => { e.preventDefault(); useErpStore.getState().showToast("Opening patient record details...", "info"); }}>
                     <i className="bi bi-box-arrow-up-right"></i>
                   </a>
                 </div>
-                <div className="text-muted fs-6">{`${apptData.patient.age} Years, ${apptData.patient.gender} • ${apptData.patient.id}`}</div>
+                <div className="text-muted fs-6">{`${patient.age} Years, ${patient.gender} • ${patient.id}`}</div>
               </div>
             </div>
 
@@ -196,17 +200,17 @@ function ApptDetailsPage() {
             <div className="row g-3 mb-4">
               <div className="col-md-4">
                 <div className="patient-contact-badge">
-                  <i className="bi bi-telephone"></i> {apptData.patient.phone}
+                  <i className="bi bi-telephone"></i> {patient.phone}
                 </div>
               </div>
               <div className="col-md-4">
                 <div className="patient-contact-badge">
-                  <i className="bi bi-envelope"></i> {apptData.patient.email}
+                  <i className="bi bi-envelope"></i> {patient.email}
                 </div>
               </div>
               <div className="col-md-4">
                 <div className="patient-contact-badge">
-                  <i className="bi bi-geo-alt"></i> {apptData.patient.address}
+                  <i className="bi bi-geo-alt"></i> {patient.address}
                 </div>
               </div>
             </div>
@@ -217,15 +221,15 @@ function ApptDetailsPage() {
             <div className="row g-3">
               <div className="col-md-3">
                 <div className="text-uppercase text-muted fw-bold mb-1" style={{ fontSize: '0.72rem', letterSpacing: '0.05em' }}>Blood Group</div>
-                <span className="badge-blood">{apptData.patient.bloodGroup}</span>
+                <span className="badge-blood">{patient.bloodGroup}</span>
               </div>
               <div className="col-md-4">
                 <div className="text-uppercase text-muted fw-bold mb-1" style={{ fontSize: '0.72rem', letterSpacing: '0.05em' }}>Allergies</div>
-                <div className="fw-bold text-dark">{apptData.patient.allergies}</div>
+                <div className="fw-bold text-dark">{patient.allergies}</div>
               </div>
               <div className="col-md-5">
                 <div className="text-uppercase text-muted fw-bold mb-1" style={{ fontSize: '0.72rem', letterSpacing: '0.05em' }}>History</div>
-                <div className="fw-bold text-dark">{apptData.patient.history}</div>
+                <div className="fw-bold text-dark">{patient.history}</div>
               </div>
             </div>
           </div>
@@ -236,11 +240,11 @@ function ApptDetailsPage() {
               <span><i className="bi bi-file-text me-1"></i> Appointment Notes & Reason</span>
             </div>
             <h4 className="fw-bold fs-6 mb-2">Reason for Visit</h4>
-            <p className="text-muted fs-6 mb-4">{apptData.clinicalNotes.reason}</p>
+            <p className="text-muted fs-6 mb-4">{apptData.clinicalNotes?.reason}</p>
             
             <div className="internal-notes-box">
               <h5>Doctor's Internal Notes</h5>
-              <p>{apptData.clinicalNotes.internalNotes}</p>
+              <p>{apptData.clinicalNotes?.internalNotes || "No internal notes recorded."}</p>
             </div>
           </div>
         </div>
@@ -252,24 +256,24 @@ function ApptDetailsPage() {
           <div className="card dashboard-card p-4 mb-4">
             <div className="card-header-caps">Assigned Doctor</div>
             <div className="d-flex align-items-center gap-3 mb-4">
-              <img src={doctorAvatar} id="doctor-avatar" className="patient-avatar-img" alt={apptData.assignedDoctor.name} />
+              <img src={doctorAvatar} id="doctor-avatar" className="patient-avatar-img" alt={assignedDoctor.name} />
               <div>
-                <h3 className="fw-bold mb-0 fs-5 text-dark">{apptData.assignedDoctor.name}</h3>
-                <div className="text-primary fw-semibold fs-6 mb-1">{apptData.assignedDoctor.specialty}</div>
+                <h3 className="fw-bold mb-0 fs-5 text-dark">{assignedDoctor.name}</h3>
+                <div className="text-primary fw-semibold fs-6 mb-1">{assignedDoctor.specialty}</div>
                 <div className="text-warning d-flex align-items-center gap-1" style={{ fontSize: '0.85rem' }}>
                   <i className="bi bi-star-fill"></i>
-                  <span className="text-muted fw-medium">{`${apptData.assignedDoctor.rating} (${apptData.assignedDoctor.reviewsCount} reviews)`}</span>
+                  <span className="text-muted fw-medium">{`${assignedDoctor.rating || '4.8'} (${assignedDoctor.reviewsCount || '100'} reviews)`}</span>
                 </div>
               </div>
             </div>
             
             <div className="info-list-row">
               <span className="info-label"><i className="bi bi-telephone me-1"></i> Phone</span>
-              <span className="info-value text-dark">{apptData.assignedDoctor.phone}</span>
+              <span className="info-value text-dark">{assignedDoctor.phone}</span>
             </div>
             <div className="info-list-row">
               <span className="info-label"><i className="bi bi-envelope me-1"></i> Email</span>
-              <span className="info-value text-dark">{apptData.assignedDoctor.email}</span>
+              <span className="info-value text-dark">{assignedDoctor.email}</span>
             </div>
           </div>
 
@@ -277,7 +281,7 @@ function ApptDetailsPage() {
           <div className="card dashboard-card p-4 mb-4">
             <div className="card-header-caps">Activity Timeline</div>
             <div className="activity-timeline">
-              {apptData.timeline.map((step, idx) => {
+              {apptData.timeline?.map((step, idx) => {
                 let stateClass = "pending";
                 if (step.completed) stateClass = "completed";
                 if (step.current) stateClass = "current";
@@ -305,7 +309,7 @@ function ApptDetailsPage() {
 
           {/* Dark Navy CTA Card */}
           <div className="card navy-action-card">
-            <p>{`Create a new session for ${apptData.patient.name} after reviewing the visit logs.`}</p>
+            <p>{`Create a new session for ${patient.name} after reviewing the visit logs.`}</p>
             <button className="btn-navy-action" onClick={handleBookNext}>Book Next Slot</button>
           </div>
         </div>

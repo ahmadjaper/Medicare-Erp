@@ -1,13 +1,15 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { useRole } from '../context/RoleContext';
 
 function Sidebar() {
   const { currentRole } = useRole();
+  const navigate = useNavigate();
 
   const handleLogout = (e) => {
     e.preventDefault();
-    alert("Logging out of ERP...");
+    useErpStore.getState().showToast("Logging out of ERP...", "info");
+    // Redirect or perform logout logic
   };
 
   return (
@@ -56,22 +58,22 @@ function Sidebar() {
 
             <div className="nav-section-title">Operations</div>
             <NavLink 
-              to="/appointments" 
-              className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-            >
-              <i className="bi bi-calendar-check"></i> Appointments
-            </NavLink>
-            <NavLink 
               to="/schedules" 
               className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
             >
               <i className="bi bi-calendar3"></i> Schedules
             </NavLink>
             <NavLink 
-              to="/doctor-availability" 
+              to="/appointments" 
               className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
             >
-              <i className="bi bi-clock-history"></i> Doctor Availability
+              <i className="bi bi-calendar-check"></i> Appointments
+            </NavLink>
+            <NavLink 
+              to="/patients" 
+              className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+            >
+              <i className="bi bi-person-heart"></i> Patients
             </NavLink>
 
             <div className="nav-section-title">Inventory</div>
@@ -82,13 +84,19 @@ function Sidebar() {
               <i className="bi bi-box-seam"></i> Inventory
             </NavLink>
             <NavLink 
-              to="/supplies" 
+              to="/suppliers" 
               className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
             >
-              <i className="bi bi-truck"></i> Supplies
+              <i className="bi bi-truck"></i> Suppliers
+            </NavLink>
+            <NavLink 
+              to="/low-stock-alerts" 
+              className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+            >
+              <i className="bi bi-exclamation-triangle"></i> Low Stock Alerts
             </NavLink>
 
-            <div className="nav-section-title">Finance</div>
+            <div className="nav-section-title">Finance & Analytics</div>
             <NavLink 
               to="/revenue" 
               className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
@@ -107,13 +115,13 @@ function Sidebar() {
               to="/users" 
               className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
             >
-              <i className="bi bi-person-gear"></i> Users
+              <i className="bi bi-person-gear"></i> Users & Roles
             </NavLink>
             <NavLink 
-              to="/roles" 
+              to="/permissions" 
               className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
             >
-              <i className="bi bi-shield-lock"></i> Roles & Permissions
+              <i className="bi bi-shield-lock"></i> Permissions
             </NavLink>
             <NavLink 
               to="/settings" 
@@ -174,6 +182,12 @@ function Sidebar() {
               className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
             >
               <i className="bi bi-calendar-check"></i> Appointments
+            </NavLink>
+            <NavLink 
+              to="/patients" 
+              className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+            >
+              <i className="bi bi-person-heart"></i> Patients
             </NavLink>
             <NavLink 
               to="/doctor-availability" 
