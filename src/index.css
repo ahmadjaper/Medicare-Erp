@@ -1,2 +1,38 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 @import './assets/css/style.css';
+
+@media print {
+  body {
+    background-color: #fff !important;
+    margin: 0;
+    padding: 0;
+  }
+  .print-section {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  .dashboard-card {
+    border: none !important;
+    box-shadow: none !important;
+  }
+  .table-responsive {
+    overflow: visible !important;
+  }
+  .table {
+    border: 1px solid #dee2e6;
+  }
+  .pagination {
+    display: none !important;
+  }
+}
+
+.category-card {
+  transition: all 0.2s ease-in-out;
+}
+.category-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+.cursor-pointer {
+  cursor: pointer;
+}

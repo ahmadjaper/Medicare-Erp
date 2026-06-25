@@ -1,6 +1,8 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { RoleProvider, useRole } from './context/RoleContext';
+import { UserProvider } from './context/UserContext';
+import { UsersManagementProvider } from './context/UsersManagementContext';
 import Layout from './components/Layout';
 
 // Existing Pages
@@ -15,41 +17,30 @@ import EmployeesPage from './pages/EmployeesPage';
 import DoctorsPage from './pages/DoctorsPage';
 import AppointmentsPage from './pages/AppointmentsPage';
 import InventoryPage from './pages/InventoryPage';
+import ItemDetailsPage from './pages/ItemDetailsPage';
+import EditItemPage from './pages/EditItemPage';
+import StockMovementHistoryPage from './pages/StockMovementHistoryPage';
+import LowStockAlertsPage from './pages/LowStockAlertsPage';
+import SuppliersPage from './pages/SuppliersPage';
+import AddSupplierPage from './pages/AddSupplierPage';
+import SupplierDetailsPage from './pages/SupplierDetailsPage';
+import EditSupplierPage from './pages/EditSupplierPage';
 import SuppliesPage from './pages/SuppliesPage';
 import RevenuePage from './pages/RevenuePage';
 import UsersPage from './pages/UsersPage';
+import UserDetailsPage from './pages/UserDetailsPage';
+import EditUserPage from './pages/EditUserPage';
 import RolesPage from './pages/RolesPage';
 import SettingsPage from './pages/SettingsPage';
 import DoctorAvailabilityPage from './pages/DoctorAvailabilityPage';
+import AddInventoryPage from './pages/AddInventoryPage';
+import AccessDeniedPage from './pages/AccessDeniedPage';
 
-const ROLE_ROUTES = {
-  Admin: [
-    '/dashboard', '/departments', '/employees', '/doctors', 
-    '/appointments', '/appointments/details', '/schedules', 
-    '/inventory', '/supplies', '/revenue', '/analytics', 
-    '/users', '/roles', '/settings', '/doctor-availability'
-  ],
-  HR: [
-    '/dashboard', '/departments', '/employees', '/doctors', 
-    '/schedules', '/settings'
-  ],
-  Receptionist: [
-    '/dashboard', '/appointments', '/appointments/details', 
-    '/doctor-availability', '/settings'
-  ]
-};
-
-function RoleProtectedRoute({ children }) {
-  const { currentRole } = useRole();
-  const location = useLocation();
+function RoleProtectedRoute({ children, moduleName }) {
+  const { hasPermission } = useRole();
   
-  const allowedRoutes = ROLE_ROUTES[currentRole] || [];
-  const currentPath = location.pathname;
-  
-  const isAllowed = allowedRoutes.some(route => currentPath === route);
-  
-  if (!isAllowed) {
-    return <Navigate to="/dashboard" replace />;
+  if (moduleName && !hasPermission(moduleName, 'view')) {
+    return <Navigate to="/access-denied" replace />;
   }
   
   return children;
@@ -58,6 +49,7 @@ function RoleProtectedRoute({ children }) {
 function AppRoutes() {
   return (
     <Routes>
+      <Route path="/access-denied" element={<AccessDeniedPage />} />
       {/* Mount Layout as the parent shell wrapper */}
       <Route path="/" element={<Layout />}>
         {/* Default route path redirects to Dashboard */}
@@ -65,91 +57,163 @@ function AppRoutes() {
         
         {/* Approved Modules */}
         <Route path="dashboard" element={
-          <RoleProtectedRoute>
+          <RoleProtectedRoute moduleName="Dashboard">
             <DashboardPage />
           </RoleProtectedRoute>
         } />
         
         <Route path="departments" element={
-          <RoleProtectedRoute>
+          <RoleProtectedRoute moduleName="Departments">
             <DepartmentsPage />
           </RoleProtectedRoute>
         } />
         
         <Route path="employees" element={
-          <RoleProtectedRoute>
+          <RoleProtectedRoute moduleName="Employees">
             <EmployeesPage />
           </RoleProtectedRoute>
         } />
         
         <Route path="doctors" element={
-          <RoleProtectedRoute>
+          <RoleProtectedRoute moduleName="Doctors">
             <DoctorsPage />
           </RoleProtectedRoute>
         } />
         
         <Route path="appointments" element={
-          <RoleProtectedRoute>
+          <RoleProtectedRoute moduleName="Appointments">
             <AppointmentsPage />
           </RoleProtectedRoute>
         } />
         
         <Route path="appointments/details" element={
-          <RoleProtectedRoute>
+          <RoleProtectedRoute moduleName="Appointments">
             <ApptDetailsPage />
           </RoleProtectedRoute>
         } />
         
         <Route path="schedules" element={
-          <RoleProtectedRoute>
+          <RoleProtectedRoute moduleName="Appointments">
             <SchedulePage />
           </RoleProtectedRoute>
         } />
         
         <Route path="inventory" element={
-          <RoleProtectedRoute>
+          <RoleProtectedRoute moduleName="Inventory">
             <InventoryPage />
           </RoleProtectedRoute>
         } />
         
+        <Route path="inventory/add" element={
+          <RoleProtectedRoute moduleName="Inventory">
+            <AddInventoryPage />
+          </RoleProtectedRoute>
+        } />
+        
+        <Route path="inventory/:id" element={
+          <RoleProtectedRoute moduleName="Inventory">
+            <ItemDetailsPage />
+          </RoleProtectedRoute>
+        } />
+
+        <Route path="inventory/:id/edit" element={
+          <RoleProtectedRoute moduleName="Inventory">
+            <EditItemPage />
+          </RoleProtectedRoute>
+        } />
+
+        <Route path="inventory/history" element={
+          <RoleProtectedRoute moduleName="Inventory">
+            <StockMovementHistoryPage />
+          </RoleProtectedRoute>
+        } />
+        
+        <Route path="inventory/low-stock-alerts" element={
+          <RoleProtectedRoute moduleName="Inventory">
+            <LowStockAlertsPage />
+          </RoleProtectedRoute>
+        } />
+        
         <Route path="supplies" element={
-          <RoleProtectedRoute>
+          <RoleProtectedRoute moduleName="Inventory">
             <SuppliesPage />
+          </RoleProtectedRoute>
+        } />
+
+        <Route path="suppliers" element={
+          <RoleProtectedRoute moduleName="Inventory">
+            <SuppliersPage />
+          </RoleProtectedRoute>
+        } />
+
+        <Route path="suppliers/add" element={
+          <RoleProtectedRoute moduleName="Inventory">
+            <AddSupplierPage />
+          </RoleProtectedRoute>
+        } />
+
+        <Route path="suppliers/:id" element={
+          <RoleProtectedRoute moduleName="Inventory">
+            <SupplierDetailsPage />
+          </RoleProtectedRoute>
+        } />
+
+        <Route path="suppliers/:id/edit" element={
+          <RoleProtectedRoute moduleName="Inventory">
+            <EditSupplierPage />
           </RoleProtectedRoute>
         } />
         
         <Route path="revenue" element={
-          <RoleProtectedRoute>
+          <RoleProtectedRoute moduleName="Reports">
             <RevenuePage />
           </RoleProtectedRoute>
         } />
         
         <Route path="analytics" element={
-          <RoleProtectedRoute>
+          <RoleProtectedRoute moduleName="Reports">
             <PerformancePage />
           </RoleProtectedRoute>
         } />
         
-        <Route path="users" element={
-          <RoleProtectedRoute>
+        <Route path="users-roles" element={
+          <RoleProtectedRoute moduleName="Settings">
             <UsersPage />
           </RoleProtectedRoute>
         } />
         
+        <Route path="users-roles/:id" element={
+          <RoleProtectedRoute moduleName="Settings">
+            <UserDetailsPage />
+          </RoleProtectedRoute>
+        } />
+        
+        <Route path="users-roles/:id/edit" element={
+          <RoleProtectedRoute moduleName="Settings">
+            <EditUserPage />
+          </RoleProtectedRoute>
+        } />
+        
         <Route path="roles" element={
-          <RoleProtectedRoute>
+          <RoleProtectedRoute moduleName="Settings">
             <RolesPage />
           </RoleProtectedRoute>
         } />
         
         <Route path="settings" element={
-          <RoleProtectedRoute>
+          <RoleProtectedRoute moduleName="Settings">
+            <SettingsPage />
+          </RoleProtectedRoute>
+        } />
+        
+        <Route path="settings/:tab" element={
+          <RoleProtectedRoute moduleName="Settings">
             <SettingsPage />
           </RoleProtectedRoute>
         } />
         
         <Route path="doctor-availability" element={
-          <RoleProtectedRoute>
+          <RoleProtectedRoute moduleName="Doctors">
             <DoctorAvailabilityPage />
           </RoleProtectedRoute>
         } />
@@ -168,11 +232,15 @@ function AppRoutes() {
 
 function App() {
   return (
-    <RoleProvider>
-      <BrowserRouter>
-        <AppRoutes />
-      </BrowserRouter>
-    </RoleProvider>
+    <UserProvider>
+      <UsersManagementProvider>
+        <RoleProvider>
+          <BrowserRouter>
+            <AppRoutes />
+          </BrowserRouter>
+        </RoleProvider>
+      </UsersManagementProvider>
+    </UserProvider>
   );
 }
 
