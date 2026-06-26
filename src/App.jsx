@@ -18,7 +18,6 @@ import EmployeesPage from './pages/EmployeesPage';
 import DoctorsPage from './pages/DoctorsPage';
 import CreateDoctorPage from './pages/CreateDoctorPage';
 import AppointmentsPage from './pages/AppointmentsPage';
-import PatientsPage from './pages/PatientsPage';
 import InventoryPage from './pages/InventoryPage';
 import ItemDetailsPage from './pages/ItemDetailsPage';
 import EditItemPage from './pages/EditItemPage';
@@ -28,7 +27,6 @@ import SuppliersPage from './pages/SuppliersPage';
 import AddSupplierPage from './pages/AddSupplierPage';
 import SupplierDetailsPage from './pages/SupplierDetailsPage';
 import EditSupplierPage from './pages/EditSupplierPage';
-import SuppliesPage from './pages/SuppliesPage';
 import RevenuePage from './pages/RevenuePage';
 import UsersPage from './pages/UsersPage';
 import RolesPage from './pages/RolesPage';
@@ -50,8 +48,8 @@ const ROLE_ROUTES = {
   Admin: [
     '/dashboard', '/departments', '/departments/create', '/departments/:id/edit', '/departments/:departmentId', '/employees', '/employees/create', '/employees/:id/edit', '/employees/:id', '/attendance-overview', '/doctors', 
     '/appointments', '/appointments/details/:id', '/schedules', 
-    '/inventory', '/supplies', '/suppliers', '/low-stock-alerts', '/revenue', '/analytics', 
-    '/users', '/roles', '/permissions', '/settings', '/doctor-availability', '/patients'
+    '/inventory', '/suppliers', '/low-stock-alerts', '/revenue', '/analytics', 
+    '/users', '/roles', '/permissions', '/settings', '/doctor-availability'
   ],
   HR: [
     '/dashboard', '/departments', '/departments/create', '/departments/:id/edit', '/departments/:departmentId', '/employees', '/employees/create', '/employees/:id/edit', '/employees/:id', '/attendance-overview', '/doctors', 
@@ -59,7 +57,7 @@ const ROLE_ROUTES = {
   ],
   Receptionist: [
     '/dashboard', '/appointments', '/appointments/details/:id', 
-    '/doctor-availability', '/settings', '/patients'
+    '/doctor-availability', '/settings'
   ]
 };
 
@@ -183,12 +181,6 @@ function AppRoutes() {
             <InventoryPage />
           </RoleProtectedRoute>
         } />
-        
-        <Route path="supplies" element={
-          <RoleProtectedRoute>
-            <SuppliesPage />
-          </RoleProtectedRoute>
-        } />
 
         <Route path="suppliers" element={
           <RoleProtectedRoute>
@@ -244,12 +236,6 @@ function AppRoutes() {
           </RoleProtectedRoute>
         } />
 
-        <Route path="patients" element={
-          <RoleProtectedRoute>
-            <PatientsPage />
-          </RoleProtectedRoute>
-        } />
-
         {/* Legacy redirect routes */}
         <Route path="schedule" element={<Navigate to="/schedules" replace />} />
         <Route path="performance" element={<Navigate to="/analytics" replace />} />
@@ -264,11 +250,15 @@ function AppRoutes() {
 
 function App() {
   return (
-    <RoleProvider>
-      <BrowserRouter>
-        <AppRoutes />
-      </BrowserRouter>
-    </RoleProvider>
+    <UserProvider>
+      <UsersManagementProvider>
+        <RoleProvider>
+          <BrowserRouter>
+            <AppRoutes />
+          </BrowserRouter>
+        </RoleProvider>
+      </UsersManagementProvider>
+    </UserProvider>
   );
 }
 

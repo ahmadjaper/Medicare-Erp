@@ -75,12 +75,6 @@ function Sidebar() {
             >
               <i className="bi bi-clock-history"></i> Doctor Availability
             </NavLink>
-            <NavLink 
-              to="/patients" 
-              className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-            >
-              <i className="bi bi-person-heart"></i> Patients
-            </NavLink>
 
             <div className="nav-section-title">Inventory</div>
             <NavLink 
@@ -88,12 +82,6 @@ function Sidebar() {
               className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
             >
               <i className="bi bi-box-seam"></i> Inventory
-            </NavLink>
-            <NavLink 
-              to="/supplies" 
-              className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-            >
-              <i className="bi bi-clipboard-pulse"></i> Supplies
             </NavLink>
             <NavLink 
               to="/suppliers" 
@@ -194,12 +182,6 @@ function Sidebar() {
               className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
             >
               <i className="bi bi-calendar-check"></i> Appointments
-            </NavLink>
-            <NavLink 
-              to="/patients" 
-              className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-            >
-              <i className="bi bi-person-heart"></i> Patients
             </NavLink>
             <NavLink 
               to="/doctor-availability" 
