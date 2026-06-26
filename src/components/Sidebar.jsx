@@ -1,14 +1,49 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { useRole } from '../context/RoleContext';
 
 function Sidebar() {
   const location = useLocation();
-  const isDoctorsActive = location.pathname.startsWith('/doctors');
+  const { currentRole } = useRole();
 
   const handleLogout = (e) => {
     e.preventDefault();
     alert("Logging out of ERP...");
   };
+
+  // Define sidebar menu items mapped strictly to the approved modules and roles
+  const menuItems = [
+    { path: '/dashboard', label: 'Dashboard', icon: 'bi-speedometer2', roles: ['Admin', 'HR', 'Receptionist'] },
+    { path: '/departments', label: 'Departments', icon: 'bi-building', roles: ['Admin', 'HR'] },
+    { path: '/employees', label: 'Employees', icon: 'bi-people', roles: ['Admin', 'HR'] },
+    { 
+      path: '/doctors', 
+      label: 'Doctors', 
+      icon: 'bi-person-badge', 
+      roles: ['Admin', 'HR'],
+      matchPrefix: '/doctors'
+    },
+    { path: '/schedules', label: 'Schedules', icon: 'bi-calendar3', roles: ['Admin', 'HR'] },
+    { 
+      path: '/appointments', 
+      label: 'Appointments', 
+      icon: 'bi-calendar-check', 
+      roles: ['Admin', 'Receptionist'],
+      matchPrefix: '/appointments'
+    },
+    { path: '/doctor-availability', label: 'Doctor Availability', icon: 'bi-calendar2-check', roles: ['Admin', 'Receptionist'] },
+    { path: '/inventory', label: 'Inventory', icon: 'bi-box-seam', roles: ['Admin'] },
+    { path: '/supplies', label: 'Supplies', icon: 'bi-clipboard-pulse', roles: ['Admin'] },
+    { path: '/suppliers', label: 'Suppliers', icon: 'bi-truck', roles: ['Admin'], matchPrefix: '/suppliers' },
+    { path: '/revenue', label: 'Revenue', icon: 'bi-wallet2', roles: ['Admin'] },
+    { path: '/analytics', label: 'Analytics', icon: 'bi-bar-chart', roles: ['Admin'] },
+    { path: '/users', label: 'Users', icon: 'bi-people-fill', roles: ['Admin'] },
+    { path: '/roles', label: 'Roles & Permissions', icon: 'bi-shield-lock', roles: ['Admin'] },
+    { path: '/settings', label: 'Settings', icon: 'bi-gear', roles: ['Admin', 'HR', 'Receptionist'], matchPrefix: '/settings' },
+  ];
+
+  // Filter items based on current active role
+  const visibleMenuItems = menuItems.filter(item => item.roles.includes(currentRole));
 
   return (
     <nav className="sidebar" id="sidebar">
@@ -23,89 +58,21 @@ function Sidebar() {
       </div>
       
       <div className="flex-grow-1 overflow-y-auto">
-        <NavLink 
-          to="/dashboard" 
-          className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-        >
-          <i className="bi bi-speedometer2"></i> Dashboard
-        </NavLink>
+        {visibleMenuItems.map((item) => {
+          const isActive = item.matchPrefix 
+            ? location.pathname.startsWith(item.matchPrefix)
+            : location.pathname === item.path;
 
-        <NavLink 
-          to="/departments" 
-          className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-        >
-          <i className="bi bi-building"></i> Departments
-        </NavLink>
-
-        <NavLink 
-          to="/employees" 
-          className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-        >
-          <i className="bi bi-people"></i> Employees
-        </NavLink>
-
-        <NavLink 
-          to="/doctors" 
-          className={`nav-link ${isDoctorsActive ? 'active' : ''}`}
-        >
-          <i className="bi bi-person-badge-fill"></i> Doctors
-        </NavLink>
-
-        <NavLink 
-          to="/schedules" 
-          className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-        >
-          <i className="bi bi-calendar3"></i> Schedules
-        </NavLink>
-
-        <NavLink 
-          to="/appointments" 
-          className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-        >
-          <i className="bi bi-calendar-check-fill"></i> Appointments
-        </NavLink>
-
-        <NavLink 
-          to="/patients" 
-          className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-        >
-          <i className="bi bi-person"></i> Patients
-        </NavLink>
-
-        <NavLink 
-          to="/inventory" 
-          className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-        >
-          <i className="bi bi-box-seam"></i> Inventory
-        </NavLink>
-
-        <NavLink 
-          to="/suppliers" 
-          className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-        >
-          <i className="bi bi-truck"></i> Suppliers
-        </NavLink>
-
-        <NavLink 
-          to="/revenue" 
-          className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-        >
-          <i className="bi bi-wallet2"></i> Revenue
-        </NavLink>
-
-        <NavLink 
-          to="/analytics" 
-          className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-        >
-          <i className="bi bi-bar-chart"></i> Analytics
-        </NavLink>
-
-        <NavLink 
-          to="/users-roles" 
-          className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-        >
-          <i className="bi bi-shield-lock"></i> Users & Roles
-        </NavLink>
+          return (
+            <NavLink 
+              key={item.path}
+              to={item.path} 
+              className={`nav-link ${isActive ? 'active' : ''}`}
+            >
+              <i className={`bi ${item.icon}`}></i> {item.label}
+            </NavLink>
+          );
+        })}
       </div>
       
       <div className="sidebar-footer">

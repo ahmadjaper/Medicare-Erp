@@ -1,5 +1,8 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { RoleProvider, useRole } from './context/RoleContext';
+import { UserProvider } from './context/UserContext';
+import { UsersManagementProvider } from './context/UsersManagementContext';
 import Layout from './components/Layout';
 
 // Existing Pages
@@ -17,56 +20,172 @@ import CreateDoctorPage from './pages/CreateDoctorPage';
 import AppointmentsPage from './pages/AppointmentsPage';
 import PatientsPage from './pages/PatientsPage';
 import InventoryPage from './pages/InventoryPage';
+import ItemDetailsPage from './pages/ItemDetailsPage';
+import EditItemPage from './pages/EditItemPage';
+import StockMovementHistoryPage from './pages/StockMovementHistoryPage';
+import LowStockAlertsPage from './pages/LowStockAlertsPage';
 import SuppliersPage from './pages/SuppliersPage';
+import AddSupplierPage from './pages/AddSupplierPage';
+import SupplierDetailsPage from './pages/SupplierDetailsPage';
+import EditSupplierPage from './pages/EditSupplierPage';
+import SuppliesPage from './pages/SuppliesPage';
 import RevenuePage from './pages/RevenuePage';
-import UsersRolesPage from './pages/UsersRolesPage';
-import DoctorDetailsPage from './pages/DoctorDetailsPage';
+import UsersPage from './pages/UsersPage';
+import RolesPage from './pages/RolesPage';
+import SettingsPage from './pages/SettingsPage';
+import DoctorAvailabilityPage from './pages/DoctorAvailabilityPage';
+
+const ROLE_ROUTES = {
+  Admin: [
+    '/dashboard', '/departments', '/employees', '/doctors', 
+    '/appointments', '/appointments/details', '/schedules', 
+    '/inventory', '/supplies', '/revenue', '/analytics', 
+    '/users', '/roles', '/settings', '/doctor-availability'
+  ],
+  HR: [
+    '/dashboard', '/departments', '/employees', '/doctors', 
+    '/schedules', '/settings'
+  ],
+  Receptionist: [
+    '/dashboard', '/appointments', '/appointments/details', 
+    '/doctor-availability', '/settings'
+  ]
+};
+
+function RoleProtectedRoute({ children }) {
+  const { currentRole } = useRole();
+  const location = useLocation();
+  
+  const allowedRoutes = ROLE_ROUTES[currentRole] || [];
+  const currentPath = location.pathname;
+  
+  const isAllowed = allowedRoutes.some(route => currentPath === route);
+  
+  if (!isAllowed) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  
+  return children;
+}
+
+function AppRoutes() {
+  return (
+    <Routes>
+      {/* Mount Layout as the parent shell wrapper */}
+      <Route path="/" element={<Layout />}>
+        {/* Default route path redirects to Dashboard */}
+        <Route index element={<Navigate to="/dashboard" replace />} />
+        
+        {/* Approved Modules */}
+        <Route path="dashboard" element={
+          <RoleProtectedRoute>
+            <DashboardPage />
+          </RoleProtectedRoute>
+        } />
+        
+        <Route path="departments" element={
+          <RoleProtectedRoute>
+            <DepartmentsPage />
+          </RoleProtectedRoute>
+        } />
+        
+        <Route path="employees" element={
+          <RoleProtectedRoute>
+            <EmployeesPage />
+          </RoleProtectedRoute>
+        } />
+        
+        <Route path="doctors" element={
+          <RoleProtectedRoute>
+            <DoctorsPage />
+          </RoleProtectedRoute>
+        } />
+        
+        <Route path="appointments" element={
+          <RoleProtectedRoute>
+            <AppointmentsPage />
+          </RoleProtectedRoute>
+        } />
+        
+        <Route path="appointments/details" element={
+          <RoleProtectedRoute>
+            <ApptDetailsPage />
+          </RoleProtectedRoute>
+        } />
+        
+        <Route path="schedules" element={
+          <RoleProtectedRoute>
+            <SchedulePage />
+          </RoleProtectedRoute>
+        } />
+        
+        <Route path="inventory" element={
+          <RoleProtectedRoute>
+            <InventoryPage />
+          </RoleProtectedRoute>
+        } />
+        
+        <Route path="supplies" element={
+          <RoleProtectedRoute>
+            <SuppliesPage />
+          </RoleProtectedRoute>
+        } />
+        
+        <Route path="revenue" element={
+          <RoleProtectedRoute>
+            <RevenuePage />
+          </RoleProtectedRoute>
+        } />
+        
+        <Route path="analytics" element={
+          <RoleProtectedRoute>
+            <PerformancePage />
+          </RoleProtectedRoute>
+        } />
+        
+        <Route path="users" element={
+          <RoleProtectedRoute>
+            <UsersPage />
+          </RoleProtectedRoute>
+        } />
+        
+        <Route path="roles" element={
+          <RoleProtectedRoute>
+            <RolesPage />
+          </RoleProtectedRoute>
+        } />
+        
+        <Route path="settings" element={
+          <RoleProtectedRoute>
+            <SettingsPage />
+          </RoleProtectedRoute>
+        } />
+        
+        <Route path="doctor-availability" element={
+          <RoleProtectedRoute>
+            <DoctorAvailabilityPage />
+          </RoleProtectedRoute>
+        } />
+
+        {/* Legacy redirect routes */}
+        <Route path="schedule" element={<Navigate to="/schedules" replace />} />
+        <Route path="performance" element={<Navigate to="/analytics" replace />} />
+        <Route path="appointment" element={<Navigate to="/appointments/details" replace />} />
+        
+        {/* Fallback catch-all redirects back to Dashboard */}
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      </Route>
+    </Routes>
+  );
+}
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* Mount Layout as the parent shell wrapper */}
-        <Route path="/" element={<Layout />}>
-          {/* Default route path redirects to Dashboard */}
-          <Route index element={<Navigate to="/dashboard" replace />} />
-          
-          {/* Approved Modules */}
-          <Route path="dashboard" element={<DashboardPage />} />
-          <Route path="departments" element={<DepartmentsPage />} />
-          <Route path="employees" element={<EmployeesPage />} />
-          
-          {/* Doctors Section */}
-          <Route path="doctors" element={<DoctorsPage />} />
-          <Route path="doctors/create" element={<CreateDoctorPage />} />
-          <Route path="doctors/details/:id" element={<DoctorDetailsPage />} />
-          <Route path="doctors/:id/edit" element={<CreateDoctorPage />} />
-          <Route path="doctors/:id/performance" element={<PerformancePage />} />
-          <Route path="doctors/:id/schedule" element={<SchedulePage />} />
-          
-          <Route path="schedules" element={<SchedulePage />} />
-          <Route path="appointments" element={<AppointmentsPage />} />
-          <Route path="appointments/create" element={<CreateAppointmentPage />} />
-          <Route path="appointments/details" element={<Navigate to="/appointments/details/APT-1001" replace />} />
-          <Route path="appointments/details/:id" element={<ApptDetailsPage />} />
-          <Route path="patients" element={<PatientsPage />} />
-          
-          <Route path="inventory" element={<InventoryPage />} />
-          <Route path="suppliers" element={<SuppliersPage />} />
-          <Route path="revenue" element={<RevenuePage />} />
-          <Route path="analytics" element={<PerformancePage />} />
-          <Route path="users-roles" element={<UsersRolesPage />} />
-
-          {/* Legacy redirect routes */}
-          <Route path="schedule" element={<Navigate to="/schedules" replace />} />
-          <Route path="performance" element={<Navigate to="/analytics" replace />} />
-          <Route path="appointment" element={<Navigate to="/appointments/details" replace />} />
-          
-          {/* Fallback catch-all redirects back to Dashboard */}
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+    <RoleProvider>
+      <BrowserRouter>
+        <AppRoutes />
+      </BrowserRouter>
+    </RoleProvider>
   );
 }
 
