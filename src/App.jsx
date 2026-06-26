@@ -35,20 +35,31 @@ import RolesPage from './pages/RolesPage';
 import SettingsPage from './pages/SettingsPage';
 import DoctorAvailabilityPage from './pages/DoctorAvailabilityPage';
 
+// New Pages
+import PermissionsPage from './pages/PermissionsPage';
+import CreateDepartmentPage from './pages/CreateDepartmentPage';
+import EditDepartmentPage from './pages/EditDepartmentPage';
+
+import DepartmentDashboardPage from './pages/DepartmentDashboardPage';
+import CreateEmployeePage from './pages/CreateEmployeePage';
+import EmployeeDetailsPage from './pages/EmployeeDetailsPage';
+import EditEmployeePage from './pages/EditEmployeePage';
+import AttendanceOverviewPage from './pages/AttendanceOverviewPage';
+
 const ROLE_ROUTES = {
   Admin: [
-    '/dashboard', '/departments', '/employees', '/doctors', 
-    '/appointments', '/appointments/details', '/schedules', 
-    '/inventory', '/supplies', '/revenue', '/analytics', 
-    '/users', '/roles', '/settings', '/doctor-availability'
+    '/dashboard', '/departments', '/departments/create', '/departments/:id/edit', '/departments/:departmentId', '/employees', '/employees/create', '/employees/:id/edit', '/employees/:id', '/attendance-overview', '/doctors', 
+    '/appointments', '/appointments/details/:id', '/schedules', 
+    '/inventory', '/supplies', '/suppliers', '/low-stock-alerts', '/revenue', '/analytics', 
+    '/users', '/roles', '/permissions', '/settings', '/doctor-availability', '/patients'
   ],
   HR: [
-    '/dashboard', '/departments', '/employees', '/doctors', 
+    '/dashboard', '/departments', '/departments/create', '/departments/:id/edit', '/departments/:departmentId', '/employees', '/employees/create', '/employees/:id/edit', '/employees/:id', '/attendance-overview', '/doctors', 
     '/schedules', '/settings'
   ],
   Receptionist: [
-    '/dashboard', '/appointments', '/appointments/details', 
-    '/doctor-availability', '/settings'
+    '/dashboard', '/appointments', '/appointments/details/:id', 
+    '/doctor-availability', '/settings', '/patients'
   ]
 };
 
@@ -59,7 +70,13 @@ function RoleProtectedRoute({ children }) {
   const allowedRoutes = ROLE_ROUTES[currentRole] || [];
   const currentPath = location.pathname;
   
-  const isAllowed = allowedRoutes.some(route => currentPath === route);
+  const isAllowed = allowedRoutes.some(route => {
+    if (route.includes(':')) {
+      const regexPath = new RegExp('^' + route.replace(/:[^\s/]+/g, '[^/]+') + '$');
+      return regexPath.test(currentPath);
+    }
+    return currentPath === route;
+  });
   
   if (!isAllowed) {
     return <Navigate to="/dashboard" replace />;
@@ -88,10 +105,52 @@ function AppRoutes() {
             <DepartmentsPage />
           </RoleProtectedRoute>
         } />
+
+        <Route path="departments/create" element={
+          <RoleProtectedRoute>
+            <CreateDepartmentPage />
+          </RoleProtectedRoute>
+        } />
+
+        <Route path="departments/:id/edit" element={
+          <RoleProtectedRoute>
+            <EditDepartmentPage />
+          </RoleProtectedRoute>
+        } />
+
+        <Route path="departments/:departmentId" element={
+          <RoleProtectedRoute>
+            <DepartmentDashboardPage />
+          </RoleProtectedRoute>
+        } />
         
         <Route path="employees" element={
           <RoleProtectedRoute>
             <EmployeesPage />
+          </RoleProtectedRoute>
+        } />
+
+        <Route path="employees/create" element={
+          <RoleProtectedRoute>
+            <CreateEmployeePage />
+          </RoleProtectedRoute>
+        } />
+
+        <Route path="employees/:id/edit" element={
+          <RoleProtectedRoute>
+            <EditEmployeePage />
+          </RoleProtectedRoute>
+        } />
+
+        <Route path="employees/:id" element={
+          <RoleProtectedRoute>
+            <EmployeeDetailsPage />
+          </RoleProtectedRoute>
+        } />
+
+        <Route path="attendance-overview" element={
+          <RoleProtectedRoute>
+            <AttendanceOverviewPage />
           </RoleProtectedRoute>
         } />
         
@@ -107,7 +166,7 @@ function AppRoutes() {
           </RoleProtectedRoute>
         } />
         
-        <Route path="appointments/details" element={
+        <Route path="appointments/details/:id" element={
           <RoleProtectedRoute>
             <ApptDetailsPage />
           </RoleProtectedRoute>
@@ -128,6 +187,18 @@ function AppRoutes() {
         <Route path="supplies" element={
           <RoleProtectedRoute>
             <SuppliesPage />
+          </RoleProtectedRoute>
+        } />
+
+        <Route path="suppliers" element={
+          <RoleProtectedRoute>
+            <SuppliersPage />
+          </RoleProtectedRoute>
+        } />
+
+        <Route path="low-stock-alerts" element={
+          <RoleProtectedRoute>
+            <LowStockAlertsPage />
           </RoleProtectedRoute>
         } />
         
@@ -154,6 +225,12 @@ function AppRoutes() {
             <RolesPage />
           </RoleProtectedRoute>
         } />
+
+        <Route path="permissions" element={
+          <RoleProtectedRoute>
+            <PermissionsPage />
+          </RoleProtectedRoute>
+        } />
         
         <Route path="settings" element={
           <RoleProtectedRoute>
@@ -167,10 +244,16 @@ function AppRoutes() {
           </RoleProtectedRoute>
         } />
 
+        <Route path="patients" element={
+          <RoleProtectedRoute>
+            <PatientsPage />
+          </RoleProtectedRoute>
+        } />
+
         {/* Legacy redirect routes */}
         <Route path="schedule" element={<Navigate to="/schedules" replace />} />
         <Route path="performance" element={<Navigate to="/analytics" replace />} />
-        <Route path="appointment" element={<Navigate to="/appointments/details" replace />} />
+        <Route path="appointment" element={<Navigate to="/appointments" replace />} />
         
         {/* Fallback catch-all redirects back to Dashboard */}
         <Route path="*" element={<Navigate to="/dashboard" replace />} />

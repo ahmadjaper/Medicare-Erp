@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import TopNavbar from '../components/TopNavbar';
-import { getMockSuppliers } from '../services/mockSupplierData';
+import { useErpStore } from '../store/erpStore';
 
 function SuppliersPage() {
   const navigate = useNavigate();
-  const [suppliers, setSuppliers] = useState([]);
-  const [filteredSuppliers, setFilteredSuppliers] = useState([]);
+  const { suppliers } = useErpStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('All Suppliers');
   
@@ -14,14 +13,25 @@ function SuppliersPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
-  useEffect(() => {
-    const data = getMockSuppliers();
-    setSuppliers(data);
-    setFilteredSuppliers(data);
-  }, []);
+  // Enrich store suppliers to match the required visual fields
+  const enrichedSuppliers = useMemo(() => {
+    return suppliers.map((s, idx) => ({
+      id: s.id || `SPL-120${idx + 1}`,
+      name: s.name,
+      contactPerson: s.contactPerson || "Representative Agent",
+      email: s.email,
+      phone: s.phone || s.contact || "+1 (555) 000-0000",
+      categories: s.categories || [s.suppliesCategory || "General Supplies"],
+      items: s.items || (20 + idx * 15),
+      recentActivity: s.recentActivity || "Delivery arrived 2 days ago",
+      status: s.status === "Preferred" ? "Active" : (s.status || "Active")
+    }));
+  }, [suppliers]);
+
+  const [filteredSuppliers, setFilteredSuppliers] = useState([]);
 
   useEffect(() => {
-    let result = suppliers;
+    let result = enrichedSuppliers;
 
     // Tab Filtering
     if (activeTab !== 'All Suppliers') {
@@ -41,7 +51,7 @@ function SuppliersPage() {
 
     setFilteredSuppliers(result);
     setCurrentPage(1); // Reset to first page on filter change
-  }, [activeTab, searchQuery, suppliers]);
+  }, [activeTab, searchQuery, enrichedSuppliers]);
 
   // Pagination Logic
   const totalItems = filteredSuppliers.length;
@@ -108,7 +118,7 @@ function SuppliersPage() {
         {/* Tabs & Meta Info */}
         <div className="d-flex justify-content-between align-items-center border-bottom px-4 pt-3 pb-0">
           <ul className="nav nav-tabs border-bottom-0 gap-4" style={{fontSize: '0.95rem', fontWeight: '500'}}>
-            {['All Suppliers', 'Active', 'Pending Review'].map(tab => (
+            {['All Suppliers', 'Active'].map(tab => (
               <li className="nav-item" key={tab}>
                 <button 
                   className={`nav-link px-0 pb-3 border-0 bg-transparent text-muted ${activeTab === tab ? 'active fw-bold' : ''}`}
@@ -129,7 +139,7 @@ function SuppliersPage() {
             ))}
           </ul>
           <div className="text-muted small">
-            Showing {totalItems > 0 ? startIndex + 1 : 0}-{Math.min(startIndex + itemsPerPage, totalItems)} of {suppliers.length} vendors
+            Showing {totalItems > 0 ? startIndex + 1 : 0}-{Math.min(startIndex + itemsPerPage, totalItems)} of {enrichedSuppliers.length} vendors
           </div>
         </div>
 
@@ -153,7 +163,7 @@ function SuppliersPage() {
                 <tr key={supplier.id}>
                   <td className="px-4 py-3">
                     <div className="d-flex align-items-center">
-                       <div className="rounded-2 d-flex align-items-center justify-content-center me-3" style={{width: '40px', height: '40px', backgroundColor: '#eef2f6', color: '#1a1f36', fontWeight: 'bold'}}>
+                      <div className="rounded-2 d-flex align-items-center justify-content-center me-3" style={{width: '40px', height: '40px', backgroundColor: '#eef2f6', color: '#1a1f36', fontWeight: 'bold'}}>
                         {getInitials(supplier.name)}
                       </div>
                       <div>
@@ -164,7 +174,7 @@ function SuppliersPage() {
                   </td>
                   <td className="py-3">
                     <div className="text-dark">{supplier.contactPerson.split(' ')[0]}</div>
-                    <div className="text-dark">{supplier.contactPerson.split(' ')[1]}</div>
+                    <div className="text-dark">{supplier.contactPerson.split(' ')[1] || ""}</div>
                   </td>
                   <td className="py-3">
                     <div className="text-dark mb-1">{supplier.email}</div>

@@ -2,12 +2,16 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import TopNavbar from '../components/TopNavbar';
 import DoctorStatCard from '../components/DoctorStatCard';
-import { doctors } from '../data/doctorsData';
-import { appointments } from '../services/api';
+import { useErpStore } from '../store/erpStore';
 import '../assets/css/doctors.css';
 
 function AppointmentsPage() {
   const navigate = useNavigate();
+  const { appointments, doctors, cancelAppointment, rescheduleAppointment } = useErpStore();
+  
+  const [rescheduleTarget, setRescheduleTarget] = useState(null);
+  const [reschedTime, setReschedTime] = useState("09:00");
+  const [reschedDate, setReschedDate] = useState("2024-05-22");
 
   // Search and Filter States
   const [searchQuery, setSearchQuery] = useState('');
@@ -15,15 +19,15 @@ function AppointmentsPage() {
   const [selectedStatus, setSelectedStatus] = useState('All');
 
   // Collect unique departments covered by doctors dynamically
-  const departments = [...new Set(doctors.map(d => d.department))];
+  const departmentsList = [...new Set(doctors.map(d => d.department))];
 
-  // Mapped mock appointments list populated dynamically with doctor names and departments
+  // Mapped appointments list populated dynamically with doctor names and departments
   const appointmentsList = appointments.map(appt => {
-    const doc = doctors.find(d => d.id === appt.doctorId) || doctors[0];
+    const doc = doctors.find(d => d.id === appt.doctorId || d.name === appt.doctorName) || {};
     
     // Format dateTime display if it is ISO format
-    let displayTime = appt.dateTime;
-    if (appt.dateTime.includes('T')) {
+    let displayTime = appt.dateTime || appt.time;
+    if (appt.dateTime && appt.dateTime.includes('T')) {
       const dateObj = new Date(appt.dateTime);
       displayTime = dateObj.toLocaleString('en-US', {
         day: 'numeric',
@@ -38,8 +42,8 @@ function AppointmentsPage() {
     return {
       ...appt,
       dateTime: displayTime,
-      doctorName: doc.name,
-      department: doc.department
+      doctorName: appt.doctorName || doc.name || "N/A",
+      department: doc.department || "General"
     };
   });
 
@@ -57,9 +61,33 @@ function AppointmentsPage() {
 
   // Calculate statistics for KPI cards dynamically
   const totalCount = appointmentsList.length;
-  const confirmedCount = appointmentsList.filter(a => a.status === 'CONFIRMED').length;
-  const completedCount = appointmentsList.filter(a => a.status === 'COMPLETED').length;
-  const cancelledCount = appointmentsList.filter(a => a.status === 'CANCELLED').length;
+  const confirmedCount = appointmentsList.filter(a => a.status === 'CONFIRMED' || a.status === 'Confirmed').length;
+  const completedCount = appointmentsList.filter(a => a.status === 'COMPLETED' || a.status === 'Completed').length;
+  const cancelledCount = appointmentsList.filter(a => a.status === 'CANCELLED' || a.status === 'Cancelled').length;
+
+  const handleRescheduleSubmit = (e) => {
+    e.preventDefault();
+    if (rescheduleTarget) {
+      // Convert 24h to AM/PM for layout display
+      let displayTime = reschedTime;
+      const [h, m] = reschedTime.split(":");
+      const hours = parseInt(h);
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      const formattedHours = hours % 12 || 12;
+      displayTime = `${String(formattedHours).padStart(2, '0')}:${m} ${ampm}`;
+
+      rescheduleAppointment(rescheduleTarget, displayTime, reschedDate);
+      setRescheduleTarget(null);
+      useErpStore.getState().showToast("Appointment rescheduled successfully!", "success");
+    }
+  };
+
+  const handleCancelClick = (apptId) => {
+    if (confirm(`Are you sure you want to cancel appointment ${apptId}?`)) {
+      cancelAppointment(apptId);
+      useErpStore.getState().showToast("Appointment cancelled successfully!", "success");
+    }
+  };
 
   return (
     <>
@@ -76,11 +104,16 @@ function AppointmentsPage() {
       </div>
 
       {/* Main Title Row */}
-      <div className="mb-4">
-        <h1 className="page-title mb-1">Appointments</h1>
-        <div className="text-muted" style={{ fontSize: '0.9rem' }}>
-          Monitor and manage hospital patient appointments.
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h1 className="page-title mb-1">Appointments</h1>
+          <div className="text-muted" style={{ fontSize: '0.9rem' }}>
+            Monitor and manage hospital patient appointments.
+          </div>
         </div>
+        <button className="btn-medicore" onClick={() => navigate('/appointments/create')}>
+          <i className="bi bi-plus-lg"></i> Book Appointment
+        </button>
       </div>
 
       {/* Statistics Row / KPI Cards */}
@@ -140,7 +173,7 @@ function AppointmentsPage() {
               style={{ fontSize: '0.9rem', height: '40px', cursor: 'pointer' }}
             >
               <option value="All">All Departments</option>
-              {departments.map((dept, idx) => (
+              {departmentsList.map((dept, idx) => (
                 <option key={idx} value={dept}>{dept}</option>
               ))}
             </select>
@@ -168,7 +201,7 @@ function AppointmentsPage() {
               onClick={() => navigate('/appointments/create')}
               style={{ height: '40px' }}
             >
-              <i className="bi bi-plus-lg"></i> Book Appointment
+              <i className="bi bi-plus-lg"></i> Book Appt
             </button>
           </div>
         </div>
@@ -187,7 +220,7 @@ function AppointmentsPage() {
                 <th scope="col" style={{ fontWeight: 600 }}>DATE & TIME</th>
                 <th scope="col" style={{ fontWeight: 600 }}>TYPE</th>
                 <th scope="col" style={{ fontWeight: 600 }}>STATUS</th>
-                <th scope="col" style={{ fontWeight: 600, width: '180px' }}>ACTIONS</th>
+                <th scope="col" style={{ fontWeight: 600, width: '220px' }}>ACTIONS</th>
               </tr>
             </thead>
             <tbody>
@@ -198,13 +231,15 @@ function AppointmentsPage() {
                   <td>{appt.doctorName}</td>
                   <td>{appt.department}</td>
                   <td className="text-muted">{appt.dateTime}</td>
-                  <td>{appt.type}</td>
+                  <td>{appt.type || "Consultation"}</td>
                   <td>
-                    <span className={
-                      appt.status === 'COMPLETED' ? 'badge-completed' :
-                      appt.status === 'CANCELLED' ? 'badge-cancelled' :
-                      'badge-confirmed'
-                    }>
+                    <span 
+                      className="badge-active"
+                      style={{
+                        backgroundColor: appt.status?.toUpperCase() === 'COMPLETED' ? '#e0f2fe' : appt.status?.toUpperCase() === 'CANCELLED' ? '#f1f5f9' : '#dcfce7',
+                        color: appt.status?.toUpperCase() === 'COMPLETED' ? '#0369a1' : appt.status?.toUpperCase() === 'CANCELLED' ? '#64748b' : '#15803d'
+                      }}
+                    >
                       {appt.status}
                     </span>
                   </td>
@@ -217,17 +252,27 @@ function AppointmentsPage() {
                       >
                         <i className="bi bi-eye me-1"></i> Details
                       </button>
-                      <button 
-                        className="btn btn-sm btn-outline-danger"
-                        onClick={() => {
-                          if (confirm(`Are you sure you want to cancel appointment ${appt.id}?`)) {
-                            alert(`Cancel action triggered for ${appt.id}. (Future Cancel Appointment screen will be linked here)`);
-                          }
-                        }}
-                        style={{ fontSize: '0.8rem', fontWeight: 600 }}
-                      >
-                        <i className="bi bi-x-circle me-1"></i> Cancel
-                      </button>
+                      {appt.status?.toUpperCase() !== "CANCELLED" && (
+                        <>
+                          <button 
+                            className="btn btn-sm btn-outline-secondary"
+                            onClick={() => {
+                              setRescheduleTarget(appt.id);
+                              setReschedDate(appt.dateTime?.split(',')[0] || "2024-05-22");
+                            }}
+                            style={{ fontSize: '0.8rem', fontWeight: 600 }}
+                          >
+                            Reschedule
+                          </button>
+                          <button 
+                            className="btn btn-sm btn-outline-danger"
+                            onClick={() => handleCancelClick(appt.id)}
+                            style={{ fontSize: '0.8rem', fontWeight: 600 }}
+                          >
+                            <i className="bi bi-x-circle me-1"></i> Cancel
+                          </button>
+                        </>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -243,6 +288,36 @@ function AppointmentsPage() {
           </table>
         </div>
       </div>
+      
+      {/* Modal: Reschedule Appointment Inline */}
+      {rescheduleTarget && (
+        <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(15,23,42,0.5)', zIndex: 1060 }} tabIndex="-1" role="dialog">
+          <div className="modal-dialog modal-dialog-centered modal-sm" role="document">
+            <div className="modal-content border-0 shadow-lg" style={{ borderRadius: '12px' }}>
+              <div className="modal-header bg-secondary text-white border-0 py-3" style={{ borderTopLeftRadius: '12px', borderTopRightRadius: '12px' }}>
+                <h5 className="modal-title fw-bold"><i className="bi bi-clock-history me-2"></i>Reschedule</h5>
+                <button type="button" className="btn-close btn-close-white" onClick={() => setRescheduleTarget(null)} aria-label="Close"></button>
+              </div>
+              <form onSubmit={handleRescheduleSubmit}>
+                <div className="modal-body p-3">
+                  <div className="mb-3">
+                    <label className="form-label fw-bold" style={{ fontSize: '0.8rem' }}>New Date</label>
+                    <input type="date" className="form-control form-control-sm" value={reschedDate} onChange={(e) => setReschedDate(e.target.value)} required />
+                  </div>
+                  <div className="mb-2">
+                    <label className="form-label fw-bold" style={{ fontSize: '0.8rem' }}>New Time</label>
+                    <input type="time" className="form-control form-control-sm" value={reschedTime} onChange={(e) => setReschedTime(e.target.value)} required />
+                  </div>
+                </div>
+                <div className="modal-footer border-0 p-3 pt-0">
+                  <button type="button" className="btn btn-sm btn-light fw-bold" onClick={() => setRescheduleTarget(null)}>Cancel</button>
+                  <button type="submit" className="btn btn-sm btn-primary fw-bold">Update</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

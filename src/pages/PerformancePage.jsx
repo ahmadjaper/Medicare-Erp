@@ -350,7 +350,7 @@ function PerformancePage() {
           </ul>
         </div>
         
-        <button className="btn-medicore" onClick={() => alert("Exporting metrics report (REST integration ready)")}>
+        <button className="btn-medicore" onClick={() => useErpStore.getState().showToast("Exporting metrics report...", "success")}>
           <i className="bi bi-box-arrow-up-right"></i> Export Report
         </button>
       </div>

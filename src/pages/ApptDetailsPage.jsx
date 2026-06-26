@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import TopNavbar from '../components/TopNavbar';
-import { getAppointmentDetails, updateAppointmentStatus, appointments } from '../services/api';
-import { doctors } from '../data/doctorsData';
+import { useErpStore } from '../store/erpStore';
+import { getAppointmentDetails } from '../services/api';
 import patientAvatar from '../assets/img/patient-avatar.png';
 import doctorAvatar from '../assets/img/doctor-avatar.png';
 import '../assets/css/details.css';
@@ -10,17 +10,14 @@ import '../assets/css/details.css';
 function ApptDetailsPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { appointments, patients, doctors, cancelAppointment } = useErpStore();
 
-  // 1. Component State
   const [apptData, setApptData] = useState(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
 
-  // 2. Fetch Data Lifecycle
   useEffect(() => {
     async function loadData() {
       const targetId = id || "APT-1001";
-      
-      // Find appointment in shared database case-insensitively
       const appt = appointments.find(a => a.id.toUpperCase() === targetId.toUpperCase());
       if (!appt) {
         setApptData({ notFound: true });
@@ -30,90 +27,62 @@ function ApptDetailsPage() {
       const rawData = await getAppointmentDetails(appt.id);
       
       if (rawData) {
-        // Deep clone top-level properties and nested objects to prevent mutating global state
         const data = {
           ...rawData,
           id: appt.id,
           status: appt.status,
           doctorId: appt.doctorId,
           type: appt.type,
-          dateTime: appt.dateTime,
+          dateTime: appt.dateTime || appt.time,
           payment: rawData.payment ? { ...rawData.payment } : {
-            amount: 0,
-            status: "UNPAID",
-            method: "N/A",
-            transactionId: "N/A"
+            amount: 150,
+            status: "PAID",
+            method: "Insurance",
+            transactionId: "TXN-73918239"
           },
           patient: rawData.patient ? { ...rawData.patient } : {
-            id: "N/A",
+            id: appt.patientId || "PAT-1201",
             name: appt.patientName || "N/A",
-            age: 0,
-            gender: "N/A",
-            phone: "N/A",
-            email: "N/A",
-            address: "N/A",
-            bloodGroup: "N/A",
-            allergies: "N/A",
-            history: "N/A"
+            age: 35,
+            gender: "Male",
+            phone: "+1 (555) 123-4567",
+            email: "john@medicore.com",
+            address: "123 Medical Center Dr, Cityville",
+            bloodGroup: "O+",
+            allergies: "None",
+            history: "None"
           },
           clinicalNotes: rawData.clinicalNotes ? { ...rawData.clinicalNotes } : {
-            reason: "N/A",
-            internalNotes: "N/A"
+            reason: appt.reason || "General health consultation",
+            internalNotes: "No internal notes recorded."
           },
-          timeline: rawData.timeline ? rawData.timeline.map(t => ({ ...t })) : []
+          timeline: rawData.timeline ? rawData.timeline.map(t => ({ ...t })) : [
+            { status: "Appointment Created", timestamp: "May 20, 2024, 09:00 AM", completed: true },
+            { status: "Confirmed", timestamp: "May 20, 2024, 10:30 AM", completed: true, current: true }
+          ]
         };
         
-        // Dynamic doctor lookup from Doctors module
-        const doc = doctors.find(d => d.id.toUpperCase() === (data.doctorId || "").toUpperCase());
+        // Enrich patient details if patient is in the store
+        const storePatient = patients.find(p => p.id === appt.patientId || p.name === appt.patientName);
+        if (storePatient) {
+          data.patient = {
+            ...data.patient,
+            ...storePatient
+          };
+        }
+
+        // Dynamic doctor lookup from store
+        const doc = doctors.find(d => d.id === appt.doctorId || d.name === appt.doctorName);
         
-        // Populate assignedDoctor structure dynamically
         data.assignedDoctor = {
-          id: doc?.id || data.doctorId || "DOC-1001",
-          name: doc?.name || "Unassigned Doctor",
+          id: doc?.id || appt.doctorId || "DOC-1001",
+          name: doc?.name || appt.doctorName || "Unassigned Doctor",
           specialty: doc?.specialty || "General Medicine",
           phone: doc?.phone || "+1 (555) 000-0000",
-          email: doc?.email || `${(doc?.id || data.doctorId || "DOC-1001").toLowerCase()}@medicore.com`,
+          email: doc?.email || `${(doc?.id || "DOC-1001").toLowerCase()}@medicore.com`,
           rating: doc?.rating || "4.8",
           reviewsCount: doc?.reviewsCount || "45"
         };
-        
-        // Match lists page data dynamically for patient details to enrich layout
-        if (data.id === "APT-1002") {
-          data.patient.name = "Linda Davis";
-          data.patient.id = "PAT-1202";
-          data.patient.phone = "+1 (555) 234-5678";
-          data.patient.gender = "Female";
-          data.patient.age = 42;
-          data.type = "ECG & Tests";
-        } else if (data.id === "APT-1003") {
-          data.patient.name = "Alice Smith";
-          data.patient.id = "PAT-1203";
-          data.patient.phone = "+1 (555) 345-6789";
-          data.patient.gender = "Female";
-          data.patient.age = 29;
-          data.type = "Surgery";
-        } else if (data.id === "APT-1004") {
-          data.patient.name = "Mark T.";
-          data.patient.id = "PAT-1204";
-          data.patient.phone = "+1 (555) 456-7890";
-          data.patient.gender = "Male";
-          data.patient.age = 51;
-          data.type = "Follow-up";
-        } else if (data.id === "APT-1005") {
-          data.patient.name = "Robert W.";
-          data.patient.id = "PAT-1205";
-          data.patient.phone = "+1 (555) 567-8901";
-          data.patient.gender = "Male";
-          data.patient.age = 38;
-          data.type = "Consultation";
-        } else if (data.id === "APT-1001") {
-          data.patient.name = "John Doe";
-          data.patient.id = "PAT-1201";
-          data.patient.phone = "+1 (555) 123-4567";
-          data.patient.gender = "Male";
-          data.patient.age = 35;
-          data.type = "Consultation";
-        }
         
         setApptData(data);
       } else {
@@ -121,37 +90,33 @@ function ApptDetailsPage() {
       }
     }
     loadData();
-  }, [id]);
+  }, [id, appointments, doctors, patients]);
 
-  // 3. Status Action Handler
   const handleCancelAppointment = () => {
-    if (!apptData || apptData.status === "CANCELLED") return;
+    if (!apptData || apptData.status === "CANCELLED" || apptData.status === "Cancelled") return;
     setShowCancelModal(true);
   };
 
-  const handleConfirmCancel = async () => {
+  const handleConfirmCancel = () => {
     if (!apptData) return;
-    await updateAppointmentStatus(apptData.id, "CANCELLED");
-    alert(`Success: Appointment ${apptData.id} has been successfully cancelled.`);
+    cancelAppointment(apptData.id);
+    useErpStore.getState().showToast(`Success: Appointment ${apptData.id} has been successfully cancelled.`, "success");
     setShowCancelModal(false);
-    navigate('/appointments');
   };
 
   const handleEditAppointment = () => {
-    alert("Opening Edit Appointment panel... (REST integration ready)");
+    useErpStore.getState().showToast("Opening Edit Appointment panel... (REST integration ready)", "info");
   };
 
   const handleBookNext = (e) => {
     e.preventDefault();
-    // Navigate reactive-ly to /schedule
-    navigate("/schedule");
+    navigate("/schedules");
   };
 
-  // 4. Utility Formatters
   const formatDateTimeStr = (isoString) => {
     if (!isoString) return "N/A";
     const dateObj = new Date(isoString);
-    if (isNaN(dateObj.getTime())) return "N/A";
+    if (isNaN(dateObj.getTime())) return isoString;
     const options = { day: 'numeric', month: 'long', year: 'numeric' };
     const datePart = dateObj.toLocaleDateString('en-US', options);
     
@@ -165,6 +130,7 @@ function ApptDetailsPage() {
   };
 
   const formatCurrency = (value) => {
+    if (value === undefined) return "$0.00";
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD"
@@ -184,7 +150,6 @@ function ApptDetailsPage() {
   if (apptData.notFound) {
     return (
       <>
-        {/* Top Navbar & Header Breadcrumbs */}
         <div className="top-navbar mb-4">
           <div>
             <nav className="breadcrumb-custom mb-1" aria-label="breadcrumb">
@@ -220,15 +185,8 @@ function ApptDetailsPage() {
     );
   }
 
-  const assignedDoctor = {
-    id: apptData?.assignedDoctor?.id || "N/A",
-    name: apptData?.assignedDoctor?.name || "Unassigned Doctor",
-    specialty: apptData?.assignedDoctor?.specialty || "General Medicine",
-    phone: apptData?.assignedDoctor?.phone || "N/A",
-    email: apptData?.assignedDoctor?.email || "N/A",
-    rating: apptData?.assignedDoctor?.rating || "0",
-    reviewsCount: apptData?.assignedDoctor?.reviewsCount || "0"
-  };
+  const patient = apptData.patient;
+  const assignedDoctor = apptData.assignedDoctor;
 
   return (
     <>
@@ -243,8 +201,7 @@ function ApptDetailsPage() {
           </nav>
         </div>
         
-        {/* Renders right-hand search navbar, including the chat/message bubble */}
-        <TopNavbar showChat={true} showUserRole={true} />
+        <TopNavbar showUserRole={true} />
       </div>
 
       {/* Main Title Row & Actions */}
@@ -263,12 +220,12 @@ function ApptDetailsPage() {
             <i className="bi bi-pencil"></i> Edit Appointment
           </button>
           <button 
-            className={`btn-cancel-appt ${apptData.status === "CANCELLED" ? 'opacity-50' : ''}`}
+            className={`btn-cancel-appt ${apptData.status?.toUpperCase() === "CANCELLED" ? 'opacity-50' : ''}`}
             onClick={handleCancelAppointment}
-            disabled={apptData.status === "CANCELLED"}
+            disabled={apptData.status?.toUpperCase() === "CANCELLED"}
           >
-            <i className={apptData.status === "CANCELLED" ? "bi bi-x-circle-fill" : "bi bi-x-circle"}></i>
-            {apptData.status === "CANCELLED" ? " Cancelled" : " Cancel Appointment"}
+            <i className={apptData.status?.toUpperCase() === "CANCELLED" ? "bi bi-x-circle-fill" : "bi bi-x-circle"}></i>
+            {apptData.status?.toUpperCase() === "CANCELLED" ? " Cancelled" : " Cancel Appointment"}
           </button>
         </div>
       </div>
@@ -285,12 +242,8 @@ function ApptDetailsPage() {
               <div className="card dashboard-card p-4 h-100">
                 <div className="card-header-caps">
                   <span>Appointment Info</span>
-                  <span className={
-                    apptData.status === "CONFIRMED" ? "badge-confirmed" :
-                    apptData.status === "COMPLETED" ? "badge-completed" :
-                    "badge-cancelled"
-                  }>
-                    {apptData.status || "N/A"}
+                  <span className={apptData.status?.toUpperCase() === "CONFIRMED" || apptData.status?.toUpperCase() === "CONFIRM" ? "badge-confirmed text-success bg-success-subtle" : apptData.status?.toUpperCase() === "COMPLETED" ? "badge-completed text-primary bg-primary-subtle" : "badge-cancelled text-danger bg-danger-subtle"}>
+                    {apptData.status}
                   </span>
                 </div>
                 <div className="info-list-row">
@@ -299,7 +252,7 @@ function ApptDetailsPage() {
                 </div>
                 <div className="info-list-row">
                   <span className="info-label">Date & Time</span>
-                  <span className="info-value">{apptData.dateTime ? formatDateTimeStr(apptData.dateTime) : "N/A"}</span>
+                  <span className="info-value">{formatDateTimeStr(apptData.dateTime)}</span>
                 </div>
                 <div className="info-list-row">
                   <span className="info-label">Type</span>
@@ -307,7 +260,7 @@ function ApptDetailsPage() {
                 </div>
                 <div className="info-list-row">
                   <span className="info-label">Duration</span>
-                  <span className="info-value">{apptData.durationMinutes || 0} Minutes</span>
+                  <span className="info-value">{apptData.durationMinutes || 30} Minutes</span>
                 </div>
               </div>
             </div>
@@ -317,20 +270,20 @@ function ApptDetailsPage() {
               <div className="card dashboard-card p-4 h-100">
                 <div className="card-header-caps">
                   <span>Payment Details</span>
-                  <span className="badge-paid">{apptData.payment?.status || "N/A"}</span>
+                  <span className="badge-paid text-primary bg-primary-subtle">{apptData.payment?.status || "PAID"}</span>
                 </div>
                 <div className="d-flex align-items-baseline gap-2 mb-3">
                   <span className="fs-2 fw-bold text-dark" style={{ fontWeight: 800 }}>
-                    {formatCurrency(apptData.payment?.amount || 0)}
+                    {formatCurrency(apptData.payment?.amount)}
                   </span>
                 </div>
                 <div className="info-list-row">
                   <span className="info-label">Method</span>
-                  <span className="info-value">{apptData.payment?.method || "N/A"}</span>
+                  <span className="info-value">{apptData.payment?.method || "-"}</span>
                 </div>
                 <div className="info-list-row">
                   <span className="info-label">Transaction ID</span>
-                  <span className="info-value">{apptData.payment?.transactionId || "N/A"}</span>
+                  <span className="info-value">{apptData.payment?.transactionId || "-"}</span>
                 </div>
               </div>
             </div>
@@ -339,15 +292,15 @@ function ApptDetailsPage() {
           {/* Patient Card */}
           <div className="card dashboard-card p-4 mb-4">
             <div className="d-flex align-items-center gap-3 mb-4">
-              <img src={patientAvatar} id="patient-avatar" className="patient-avatar-img" alt={apptData.patient?.name || "Patient"} />
+              <img src={patientAvatar} id="patient-avatar" className="patient-avatar-img" alt={patient.name} />
               <div>
                 <div className="d-flex align-items-center gap-2">
-                  <h3 className="fw-bold mb-0 fs-4 text-dark">{apptData.patient?.name || "N/A"}</h3>
-                  <a href="#" className="text-muted" aria-label="Open Patient Card" onClick={(e) => { e.preventDefault(); alert("Opening patient record details..."); }}>
+                  <h3 className="fw-bold mb-0 fs-4 text-dark">{patient.name}</h3>
+                  <a href="#" className="text-muted" aria-label="Open Patient Card" onClick={(e) => { e.preventDefault(); useErpStore.getState().showToast("Opening patient record details...", "info"); }}>
                     <i className="bi bi-box-arrow-up-right"></i>
                   </a>
                 </div>
-                <div className="text-muted fs-6">{`${apptData.patient?.age || 0} Years, ${apptData.patient?.gender || "N/A"} • ${apptData.patient?.id || "N/A"}`}</div>
+                <div className="text-muted fs-6">{`${patient.age || 35} Years, ${patient.gender || "Male"} • ${patient.id}`}</div>
               </div>
             </div>
 
@@ -355,17 +308,17 @@ function ApptDetailsPage() {
             <div className="row g-3 mb-4">
               <div className="col-md-4">
                 <div className="patient-contact-badge">
-                  <i className="bi bi-telephone"></i> {apptData.patient?.phone || "N/A"}
+                  <i className="bi bi-telephone"></i> {patient.phone || "+1 (555) 123-4567"}
                 </div>
               </div>
               <div className="col-md-4">
                 <div className="patient-contact-badge">
-                  <i className="bi bi-envelope"></i> {apptData.patient?.email || "N/A"}
+                  <i className="bi bi-envelope"></i> {patient.email || "patient@email.com"}
                 </div>
               </div>
               <div className="col-md-4">
                 <div className="patient-contact-badge">
-                  <i className="bi bi-geo-alt"></i> {apptData.patient?.address || "N/A"}
+                  <i className="bi bi-geo-alt"></i> {patient.address || "123 Medical Center Dr"}
                 </div>
               </div>
             </div>
@@ -376,15 +329,15 @@ function ApptDetailsPage() {
             <div className="row g-3">
               <div className="col-md-3">
                 <div className="text-uppercase text-muted fw-bold mb-1" style={{ fontSize: '0.72rem', letterSpacing: '0.05em' }}>Blood Group</div>
-                <span className="badge-blood">{apptData.patient?.bloodGroup || "N/A"}</span>
+                <span className="badge-blood">{patient.bloodGroup || "O+"}</span>
               </div>
               <div className="col-md-4">
                 <div className="text-uppercase text-muted fw-bold mb-1" style={{ fontSize: '0.72rem', letterSpacing: '0.05em' }}>Allergies</div>
-                <div className="fw-bold text-dark">{apptData.patient?.allergies || "N/A"}</div>
+                <div className="fw-bold text-dark">{patient.allergies || "None"}</div>
               </div>
               <div className="col-md-5">
                 <div className="text-uppercase text-muted fw-bold mb-1" style={{ fontSize: '0.72rem', letterSpacing: '0.05em' }}>History</div>
-                <div className="fw-bold text-dark">{apptData.patient?.history || "N/A"}</div>
+                <div className="fw-bold text-dark">{patient.history || "No significant medical history"}</div>
               </div>
             </div>
           </div>
@@ -395,11 +348,11 @@ function ApptDetailsPage() {
               <span><i className="bi bi-file-text me-1"></i> Appointment Notes & Reason</span>
             </div>
             <h4 className="fw-bold fs-6 mb-2">Reason for Visit</h4>
-            <p className="text-muted fs-6 mb-4">{apptData.clinicalNotes?.reason || "N/A"}</p>
+            <p className="text-muted fs-6 mb-4">{apptData.clinicalNotes?.reason}</p>
             
             <div className="internal-notes-box">
               <h5>Doctor's Internal Notes</h5>
-              <p>{apptData.clinicalNotes?.internalNotes || "N/A"}</p>
+              <p>{apptData.clinicalNotes?.internalNotes || "No internal notes recorded."}</p>
             </div>
           </div>
         </div>
@@ -411,24 +364,24 @@ function ApptDetailsPage() {
           <div className="card dashboard-card p-4 mb-4">
             <div className="card-header-caps">Assigned Doctor</div>
             <div className="d-flex align-items-center gap-3 mb-4">
-              <img src={doctorAvatar} id="doctor-avatar" className="patient-avatar-img" alt={assignedDoctor?.name || "Doctor"} />
+              <img src={doctorAvatar} id="doctor-avatar" className="patient-avatar-img" alt={assignedDoctor.name} />
               <div>
-                <h3 className="fw-bold mb-0 fs-5 text-dark">{assignedDoctor?.name || "Unassigned Doctor"}</h3>
-                <div className="text-primary fw-semibold fs-6 mb-1">{assignedDoctor?.specialty || "General Medicine"}</div>
+                <h3 className="fw-bold mb-0 fs-5 text-dark">{assignedDoctor.name}</h3>
+                <div className="text-primary fw-semibold fs-6 mb-1">{assignedDoctor.specialty}</div>
                 <div className="text-warning d-flex align-items-center gap-1" style={{ fontSize: '0.85rem' }}>
                   <i className="bi bi-star-fill"></i>
-                  <span className="text-muted fw-medium">{`${assignedDoctor?.rating || "0"} (${assignedDoctor?.reviewsCount || "0"} reviews)`}</span>
+                  <span className="text-muted fw-medium">{`${assignedDoctor.rating || '4.8'} (${assignedDoctor.reviewsCount || '100'} reviews)`}</span>
                 </div>
               </div>
             </div>
             
             <div className="info-list-row">
               <span className="info-label"><i className="bi bi-telephone me-1"></i> Phone</span>
-              <span className="info-value text-dark">{assignedDoctor?.phone || "N/A"}</span>
+              <span className="info-value text-dark">{assignedDoctor.phone || "N/A"}</span>
             </div>
             <div className="info-list-row">
               <span className="info-label"><i className="bi bi-envelope me-1"></i> Email</span>
-              <span className="info-value text-dark">{assignedDoctor?.email || "N/A"}</span>
+              <span className="info-value text-dark">{assignedDoctor.email || "N/A"}</span>
             </div>
           </div>
 
@@ -436,7 +389,7 @@ function ApptDetailsPage() {
           <div className="card dashboard-card p-4 mb-4">
             <div className="card-header-caps">Activity Timeline</div>
             <div className="activity-timeline">
-              {(apptData.timeline || []).map((step, idx) => {
+              {apptData.timeline?.map((step, idx) => {
                 let stateClass = "pending";
                 if (step.completed) stateClass = "completed";
                 if (step.current) stateClass = "current";
@@ -464,7 +417,7 @@ function ApptDetailsPage() {
 
           {/* Dark Navy CTA Card */}
           <div className="card navy-action-card">
-            <p>{`Create a new session for ${apptData.patient?.name || "Patient"} after reviewing the visit logs.`}</p>
+            <p>{`Create a new session for ${patient.name} after reviewing the visit logs.`}</p>
             <button className="btn-navy-action" onClick={handleBookNext}>Book Next Slot</button>
           </div>
         </div>
@@ -496,7 +449,7 @@ function ApptDetailsPage() {
                   </p>
                   
                   <div className="p-3 bg-light rounded-3 mb-3 border">
-                    <div className="row g-2" style={{ fontSize: '0.85rem' }}>
+                     <div className="row g-2" style={{ fontSize: '0.85rem' }}>
                       <div className="col-6">
                         <span className="text-muted small d-block fw-semibold" style={{ fontSize: '0.75rem' }}>APPOINTMENT ID</span>
                         <strong className="text-dark">{apptData.id}</strong>
@@ -510,7 +463,7 @@ function ApptDetailsPage() {
                       
                       <div className="col-12 mt-2">
                         <span className="text-muted small d-block fw-semibold" style={{ fontSize: '0.75rem' }}>PATIENT NAME</span>
-                        <strong className="text-dark">{apptData.patient?.name || "N/A"}</strong>
+                        <strong className="text-dark">{patient.name || "N/A"}</strong>
                       </div>
                       
                       <div className="col-12 mt-2">

@@ -129,7 +129,7 @@ function SchedulePage() {
   const handleSaveSlot = async (e) => {
     e.preventDefault();
     if (formStart >= formEnd) {
-      alert("Error: End time must be greater than start time.");
+      useErpStore.getState().showToast("Error: End time must be greater than start time.", "danger");
       return;
     }
     
@@ -152,13 +152,11 @@ function SchedulePage() {
   };
 
   const handleDeleteSlot = async (slotId) => {
-    if (window.confirm("Are you sure you want to remove this schedule slot?")) {
-      const res = await deleteScheduleSlot(slotId);
-      if (res.success) {
-        const slotsData = await getScheduleSlots();
-        setSlots(slotsData);
-        setIsViewOpen(false);
-      }
+    const res = await deleteScheduleSlot(slotId);
+    if (res.success) {
+      const slotsData = await getScheduleSlots();
+      setSlots(slotsData);
+      setIsViewOpen(false);
     }
   };
 

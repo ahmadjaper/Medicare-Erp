@@ -1,13 +1,13 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import TopNavbar from '../components/TopNavbar';
-import { getMockInventoryData } from '../services/mockInventoryData';
+import { useErpStore } from '../store/erpStore';
 import SupplierContactModal from '../components/inventory/SupplierContactModal';
 import EmailSupplierModal from '../components/inventory/EmailSupplierModal';
 import UrgentReorderModal from '../components/inventory/UrgentReorderModal';
 
 function LowStockAlertsPage() {
-  const [alerts, setAlerts] = useState([]);
+  const { inventory } = useErpStore();
   
   // Filter and Pagination state
   const [statusFilter, setStatusFilter] = useState('All Statuses');
@@ -20,40 +20,39 @@ function LowStockAlertsPage() {
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [showReorderModal, setShowReorderModal] = useState(false);
 
-  useEffect(() => {
-    // Generate alerts from inventory
-    const inventory = getMockInventoryData();
+  // Generate alerts dynamically from store inventory
+  const alerts = useMemo(() => {
     const generatedAlerts = inventory.map(item => {
       let status = 'Normal';
-      const stock = item.stockQuantity;
-      const reorder = item.reorderPoint;
+      const stock = item.stock;
+      const reorder = item.threshold;
       
       if (stock === 0) {
         status = 'Out of Stock';
-      } else if (stock <= reorder * 0.1) {
+      } else if (stock <= reorder * 0.5) {
         status = 'Critical';
       } else if (stock <= reorder) {
         status = 'Low Stock';
       }
 
-      // Calculate a suggested reorder quantity (e.g. up to 1.5x reorder point or generic)
-      const suggestedQty = reorder > 0 ? Math.ceil(reorder * 1.5 - stock) : 100;
+      // Calculate suggested reorder quantity
+      const suggestedQty = reorder > 0 ? Math.max(0, Math.ceil(reorder * 1.5 - stock)) : 100;
 
       return {
         ...item,
+        stockQuantity: stock,
+        reorderPoint: reorder,
         alertStatus: status,
         suggestedQty
       };
     }).filter(item => item.alertStatus !== 'Normal');
 
     // Sort by severity: Out of Stock -> Critical -> Low Stock
-    generatedAlerts.sort((a, b) => {
+    return [...generatedAlerts].sort((a, b) => {
       const severity = { 'Out of Stock': 3, 'Critical': 2, 'Low Stock': 1 };
       return severity[b.alertStatus] - severity[a.alertStatus];
     });
-
-    setAlerts(generatedAlerts);
-  }, []);
+  }, [inventory]);
 
   // Card Values
   const outOfStockCount = alerts.filter(a => a.alertStatus === 'Out of Stock').length;
@@ -77,7 +76,7 @@ function LowStockAlertsPage() {
   const handleExport = () => {
     const csvContent = "data:text/csv;charset=utf-8," 
       + "Item Name,SKU,Category,Stock,Reorder Point,Status,Suggested Qty\n"
-      + filteredAlerts.map(e => `${e.name},${e.sku},${e.category},${e.stockQuantity},${e.reorderPoint},${e.alertStatus},${e.suggestedQty}`).join("\n");
+      + filteredAlerts.map(e => `${e.name},${e.id},${e.category},${e.stockQuantity},${e.reorderPoint},${e.alertStatus},${e.suggestedQty}`).join("\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
@@ -88,7 +87,6 @@ function LowStockAlertsPage() {
   };
 
   const handleBulkReorder = () => {
-    // For demo purposes, we can just open the urgent order modal with a dummy or the first item
     if (alerts.length > 0) {
       setSelectedItem(alerts[0]);
       setShowReorderModal(true);
@@ -107,7 +105,7 @@ function LowStockAlertsPage() {
       case 'Critical':
         return <span className="badge rounded-pill bg-danger-subtle text-danger px-3 py-2 fw-semibold border border-danger-subtle"><span className="me-1">●</span> Critical</span>;
       case 'Low Stock':
-        return <span className="badge rounded-pill bg-primary-subtle text-primary px-3 py-2 fw-semibold border border-primary-subtle"><span className="me-1">●</span> Low Stock</span>;
+        return <span className="badge rounded-pill bg-warning-subtle text-warning px-3 py-2 fw-semibold border border-warning-subtle"><span className="me-1">●</span> Low Stock</span>;
       case 'Out of Stock':
         return <span className="badge rounded-pill bg-secondary-subtle text-secondary px-3 py-2 fw-semibold border border-secondary-subtle"><span className="me-1">⊘</span> Out of Stock</span>;
       default:
@@ -120,10 +118,10 @@ function LowStockAlertsPage() {
       case 'Critical':
         return (
           <div className="d-flex flex-column align-items-end">
-            <button className="btn btn-primary btn-sm w-100 mb-1 fw-medium shadow-sm" onClick={() => openActionModal(item, 'contact')}>
+            <button className="btn btn-danger btn-sm w-100 mb-1 fw-medium shadow-sm" onClick={() => openActionModal(item, 'contact')}>
               <i className="bi bi-telephone-fill me-1"></i> Contact Supplier
             </button>
-            <span className="text-muted" style={{fontSize: '0.75rem'}}>Suggest: {item.suggestedQty} units</span>
+            <span className="text-muted" style={{fontSize: '0.75rem'}}>Suggest: {item.suggestedQty} {item.unit}</span>
           </div>
         );
       case 'Low Stock':
@@ -132,7 +130,7 @@ function LowStockAlertsPage() {
             <button className="btn btn-light border btn-sm w-100 mb-1 fw-medium shadow-sm" onClick={() => openActionModal(item, 'email')}>
               <i className="bi bi-envelope me-1"></i> Email Supplier
             </button>
-            <span className="text-muted" style={{fontSize: '0.75rem'}}>Suggest: {item.suggestedQty} units</span>
+            <span className="text-muted" style={{fontSize: '0.75rem'}}>Suggest: {item.suggestedQty} {item.unit}</span>
           </div>
         );
       case 'Out of Stock':
@@ -141,7 +139,7 @@ function LowStockAlertsPage() {
             <button className="btn btn-dark btn-sm w-100 mb-1 fw-medium shadow-sm" onClick={() => openActionModal(item, 'reorder')}>
               <i className="bi bi-exclamation-triangle-fill me-1"></i> Urgent Order
             </button>
-            <span className="text-muted" style={{fontSize: '0.75rem'}}>Suggest: {item.suggestedQty} units</span>
+            <span className="text-muted" style={{fontSize: '0.75rem'}}>Suggest: {item.suggestedQty} {item.unit}</span>
           </div>
         );
       default:
@@ -150,7 +148,7 @@ function LowStockAlertsPage() {
   };
 
   const getProgressBar = (stock, reorderPoint, status) => {
-    let colorClass = 'bg-primary';
+    let colorClass = 'bg-warning';
     if (status === 'Critical') colorClass = 'bg-danger';
     if (status === 'Out of Stock') colorClass = 'bg-secondary';
 
@@ -169,7 +167,10 @@ function LowStockAlertsPage() {
       'Fluids': 'bi-droplet-half',
       'Consumables': 'bi-bandaid',
       'Pharmacy': 'bi-capsule',
-      'Equipment': 'bi-heart-pulse'
+      'Equipment': 'bi-heart-pulse',
+      'Blood Bank': 'bi-droplet-fill',
+      'Supplies': 'bi-box-seam',
+      'Beds': 'bi-h-square'
     };
     return catMap[category] || 'bi-box-seam';
   };
@@ -184,7 +185,7 @@ function LowStockAlertsPage() {
             <span className="text-dark fw-bold">Low Stock Alerts</span>
           </nav>
         </div>
-        <TopNavbar showUserRole={false} />
+        <TopNavbar showUserRole={true} />
       </div>
 
       <div className="d-flex justify-content-between align-items-end mb-4">
@@ -193,7 +194,7 @@ function LowStockAlertsPage() {
           <p className="text-muted mb-0" style={{fontSize: '1rem'}}>Monitor and manage critical inventory levels across all departments.</p>
         </div>
         <div className="d-flex gap-2">
-          <button className="btn btn-light border fw-semibold shadow-sm d-flex align-items-center gap-2 px-3" onClick={handleExport}>
+          <button className="btn btn-white border fw-semibold shadow-sm d-flex align-items-center gap-2 px-3" onClick={handleExport}>
             <i className="bi bi-download"></i> Export Report
           </button>
           <button className="btn btn-dark fw-semibold shadow-sm d-flex align-items-center gap-2 px-3" onClick={handleBulkReorder}>
@@ -219,10 +220,10 @@ function LowStockAlertsPage() {
           </div>
         </div>
         <div className="col-md-3">
-          <div className="card border-primary-subtle h-100 shadow-sm" style={{backgroundColor: '#f8faff'}}>
+          <div className="card border-warning-subtle h-100 shadow-sm" style={{backgroundColor: '#fffdf6'}}>
             <div className="card-body">
               <div className="mb-3">
-                <div className="bg-primary-subtle text-primary rounded d-flex align-items-center justify-content-center" style={{width: '40px', height: '40px'}}>
+                <div className="bg-warning-subtle text-warning rounded d-flex align-items-center justify-content-center" style={{width: '40px', height: '40px'}}>
                   <i className="bi bi-graph-down-arrow fs-5"></i>
                 </div>
               </div>
@@ -304,15 +305,15 @@ function LowStockAlertsPage() {
                         </div>
                         <div>
                           <div className="fw-bold text-dark mb-1">{item.name}</div>
-                          <div className="text-muted" style={{fontSize: '0.8rem'}}>SKU: {item.sku}</div>
+                          <div className="text-muted" style={{fontSize: '0.8rem'}}>SKU: {item.id}</div>
                         </div>
                       </div>
                     </td>
                     <td className="text-muted fw-medium">{item.category}</td>
                     <td>
                       <div className="d-flex align-items-baseline gap-1">
-                        <span className={`fw-bold ${item.alertStatus === 'Out of Stock' ? 'text-secondary' : item.alertStatus === 'Critical' ? 'text-danger' : 'text-dark'}`}>{item.stockQuantity}</span>
-                        <span className="text-muted" style={{fontSize: '0.85rem'}}>/ {item.reorderPoint}</span>
+                        <span className={`fw-bold ${item.alertStatus === 'Out of Stock' ? 'text-secondary' : item.alertStatus === 'Critical' ? 'text-danger' : 'text-dark'}`}>{item.stockQuantity} {item.unit}</span>
+                        <span className="text-muted" style={{fontSize: '0.85rem'}}>/ {item.reorderPoint} {item.unit}</span>
                       </div>
                       {getProgressBar(item.stockQuantity, item.reorderPoint, item.alertStatus)}
                     </td>
