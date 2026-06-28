@@ -235,14 +235,7 @@ function SchedulePage() {
               <button className="schedule-nav-btn" onClick={() => navigateWeek(1)}><i className="bi bi-chevron-right"></i></button>
             </div>
             
-            <button 
-              className="btn btn-outline-primary"
-              onClick={() => navigate(`/doctors/${doctor.id}/performance`)}
-              style={{ fontWeight: 600, fontSize: '0.875rem', height: '38px', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
-            >
-              <i className="bi bi-bar-chart"></i> View Performance
-            </button>
-            
+
             <button className="btn-medicore" onClick={handleOpenAddBtn} style={{ height: '38px' }}>
               <i className="bi bi-plus-lg"></i> Add Slot
             </button>

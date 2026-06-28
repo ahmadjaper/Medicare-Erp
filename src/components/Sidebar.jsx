@@ -129,6 +129,20 @@ function Sidebar() {
             >
               <i className="bi bi-gear"></i> Settings
             </NavLink>
+
+            <div className="nav-section-title">Custom Modules</div>
+            <NavLink 
+              to="/inventory-management" 
+              className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+            >
+              <i className="bi bi-box-seam-fill"></i> Inventory Management
+            </NavLink>
+            <NavLink 
+              to="/user-administration" 
+              className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+            >
+              <i className="bi bi-people-fill"></i> User Administration
+            </NavLink>
           </>
         )}
 
