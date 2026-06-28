@@ -2,12 +2,14 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRole } from '../context/RoleContext';
 import { useUser } from '../context/UserContext';
+import { useAuth } from '../context/AuthContext';
 import { useErpStore } from '../store/erpStore';
 import doctorAvatar from '../assets/img/doctor-avatar.png';
 
 function TopNavbar({ showUserRole = true }) {
-  const { currentRole, setCurrentRole } = useRole();
+  const { currentRole } = useRole();
   const { userProfile } = useUser();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   const {
@@ -69,8 +71,8 @@ function TopNavbar({ showUserRole = true }) {
   }, []);
 
   const userAvatar = userProfile?.avatar || doctorAvatar;
-  const userFullName = userProfile?.fullName || "Admin User";
-  const userJobTitle = userProfile?.jobTitle || "System Administrator";
+  const userFullName = user?.name || userProfile?.fullName || "Admin User";
+  const userJobTitle = user?.role || userProfile?.jobTitle || "System Administrator";
 
   // Real-time search matching
   const matchingPatients = searchVal
@@ -279,19 +281,6 @@ function TopNavbar({ showUserRole = true }) {
             <div className="navbar-user-name" style={{ fontSize: '0.8rem', fontWeight: 700 }}>{userFullName}</div>
             <div className="navbar-user-role" style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{userJobTitle}</div>
           </div>
-          <select 
-            value={currentRole} 
-            onChange={(e) => {
-              setCurrentRole(e.target.value);
-              navigate('/dashboard');
-            }}
-            className="form-select form-select-sm border-secondary-subtle"
-            style={{ width: '135px', fontSize: '0.8rem', height: '32px', cursor: 'pointer' }}
-          >
-            <option value="Admin">Admin Role</option>
-            <option value="HR">HR Role</option>
-            <option value="Receptionist">Receptionist Role</option>
-          </select>
         </div>
       )}
       

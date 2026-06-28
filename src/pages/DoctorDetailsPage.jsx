@@ -66,11 +66,8 @@ function DoctorDetailsPage() {
           <button className="btn btn-outline-secondary" onClick={handleBack} style={{ fontSize: '0.9rem', fontWeight: 600 }}>
             Back to List
           </button>
-          <button className="btn btn-outline-primary" onClick={() => navigate(`/doctors/${doctor.id}/schedule`)} style={{ fontSize: '0.9rem', fontWeight: 600 }}>
+          <button className="btn btn-outline-primary" onClick={() => navigate(`/schedules/${doctor.id}`)} style={{ fontSize: '0.9rem', fontWeight: 600 }}>
             <i className="bi bi-calendar3"></i> View Schedule
-          </button>
-          <button className="btn btn-outline-primary" onClick={() => navigate(`/doctors/${doctor.id}/performance`)} style={{ fontSize: '0.9rem', fontWeight: 600 }}>
-            <i className="bi bi-bar-chart"></i> View Performance
           </button>
           <button 
             className="btn btn-primary" 

@@ -1,9 +1,15 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
 import { RoleProvider, useRole } from './context/RoleContext';
 import { UserProvider } from './context/UserContext';
 import { UsersManagementProvider } from './context/UsersManagementContext';
 import Layout from './components/Layout';
+import ProtectedRoute from './components/ProtectedRoute';
+
+// Auth Pages
+import LoginPage from './pages/LoginPage';
+import SignUpPage from './pages/SignUpPage';
 
 // Existing Pages
 import SchedulePage from './pages/SchedulePage';
@@ -54,14 +60,14 @@ import AttendanceOverviewPage from './pages/AttendanceOverviewPage';
 
 const ROLE_ROUTES = {
   Admin: [
-    '/dashboard', '/departments', '/departments/create', '/departments/:id/edit', '/departments/:departmentId', '/employees', '/employees/create', '/employees/:id/edit', '/employees/:id', '/attendance-overview', '/doctors', '/doctors/create', '/doctors/:id/edit', '/doctors/details/:id', '/doctors/:id/schedule', 
+    '/dashboard', '/departments', '/departments/create', '/departments/:id/edit', '/departments/:departmentId', '/employees', '/employees/create', '/employees/:id/edit', '/employees/:id', '/attendance-overview', '/doctors', '/doctors/create', '/doctors/:id/edit', '/doctors/details/:id', '/schedules/:id', 
     '/appointments', '/appointments/create', '/appointments/details/:id', '/schedules', 
     '/inventory', '/inventory/add', '/inventory/history', '/inventory/:id', '/inventory/:id/edit', '/suppliers', '/suppliers/add', '/suppliers/:id', '/suppliers/:id/edit', '/low-stock-alerts', '/revenue', '/analytics', 
     '/users', '/roles', '/users-roles', '/users-roles/:id', '/users-roles/:id/edit', '/permissions', '/settings', '/settings/:tab', '/doctor-availability',
     '/inventory-management', '/user-administration'
   ],
   HR: [
-    '/dashboard', '/departments', '/departments/create', '/departments/:id/edit', '/departments/:departmentId', '/employees', '/employees/create', '/employees/:id/edit', '/employees/:id', '/attendance-overview', '/doctors', '/doctors/create', '/doctors/:id/edit', '/doctors/details/:id', '/doctors/:id/schedule', 
+    '/dashboard', '/departments', '/departments/create', '/departments/:id/edit', '/departments/:departmentId', '/employees', '/employees/create', '/employees/:id/edit', '/employees/:id', '/attendance-overview', '/doctors', '/doctors/create', '/doctors/:id/edit', '/doctors/details/:id', '/schedules/:id', 
     '/schedules', '/settings', '/settings/:tab'
   ],
   Receptionist: [
@@ -95,8 +101,16 @@ function RoleProtectedRoute({ children }) {
 function AppRoutes() {
   return (
     <Routes>
-      {/* Mount Layout as the parent shell wrapper */}
-      <Route path="/" element={<Layout />}>
+      {/* Public Routes */}
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/signup" element={<SignUpPage />} />
+
+      {/* Mount Layout as the parent shell wrapper, protected by Auth */}
+      <Route path="/" element={
+        <ProtectedRoute>
+          <Layout />
+        </ProtectedRoute>
+      }>
         {/* Default route path redirects to Dashboard */}
         <Route index element={<Navigate to="/dashboard" replace />} />
         
@@ -209,7 +223,7 @@ function AppRoutes() {
           </RoleProtectedRoute>
         } />
         
-        <Route path="doctors/:id/schedule" element={
+        <Route path="schedules/:id" element={
           <RoleProtectedRoute>
             <SchedulePage />
           </RoleProtectedRoute>
@@ -367,15 +381,17 @@ function AppRoutes() {
 
 function App() {
   return (
-    <UserProvider>
-      <UsersManagementProvider>
-        <RoleProvider>
-          <BrowserRouter>
-            <AppRoutes />
-          </BrowserRouter>
-        </RoleProvider>
-      </UsersManagementProvider>
-    </UserProvider>
+    <AuthProvider>
+      <UserProvider>
+        <UsersManagementProvider>
+          <RoleProvider>
+            <BrowserRouter>
+              <AppRoutes />
+            </BrowserRouter>
+          </RoleProvider>
+        </UsersManagementProvider>
+      </UserProvider>
+    </AuthProvider>
   );
 }
 

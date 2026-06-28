@@ -115,7 +115,7 @@ function StockMovementHistoryPage() {
           <p className="text-muted mb-0" style={{fontSize: '0.9rem'}}>Detailed audit log of all inventory transactions.</p>
         </div>
         <div className="d-flex align-items-center gap-2 d-print-none">
-          <button className="btn btn-primary fw-semibold d-flex align-items-center gap-2 shadow-sm px-3" onClick={() => navigate('/inventory/low-stock-alerts')}>
+          <button className="btn btn-primary fw-semibold d-flex align-items-center gap-2 shadow-sm px-3" onClick={() => navigate('/low-stock-alerts')}>
             <i className="bi bi-bell-fill"></i> Low Stock Alerts
           </button>
           <button className="btn btn-light border fw-semibold d-flex align-items-center gap-2 shadow-sm px-3" onClick={handleExportCSV}>

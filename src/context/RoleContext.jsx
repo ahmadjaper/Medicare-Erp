@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useAuth } from './AuthContext';
 
 const RoleContext = createContext();
 
@@ -57,7 +58,14 @@ const initialRolesList = [
 ];
 
 export const RoleProvider = ({ children }) => {
-  const [currentRole, setCurrentRole] = useState('Admin'); // Default is Admin
+  const { user } = useAuth();
+  const [currentRole, setCurrentRole] = useState(user?.role || 'Admin'); // Default is Admin
+
+  useEffect(() => {
+    if (user?.role) {
+      setCurrentRole(user.role);
+    }
+  }, [user]);
   
   const [permissions, setPermissions] = useState(() => {
     const local = localStorage.getItem('erp_permissions');

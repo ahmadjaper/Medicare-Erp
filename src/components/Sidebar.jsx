@@ -1,20 +1,23 @@
 import React from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useRole } from '../context/RoleContext';
+import { useAuth } from '../context/AuthContext';
 import { useErpStore } from '../store/erpStore';
 
 function Sidebar() {
   const location = useLocation();
   const { currentRole } = useRole();
+  const { logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = (e) => {
     e.preventDefault();
-    useErpStore.getState().showToast("Logging out of ERP...", "info");
+    logout();
+    navigate('/login');
   };
 
   return (
-    <nav className="sidebar" id="sidebar">
+    <nav className="sidebar vh-100" id="sidebar">
       <div className="brand-area">
         <div className="d-flex align-items-center gap-2">
           <i className="bi bi-hospital-fill fs-4 text-primary"></i>
@@ -96,19 +99,6 @@ function Sidebar() {
               <i className="bi bi-exclamation-triangle"></i> Low Stock Alerts
             </NavLink>
 
-            <div className="nav-section-title">Finance & Analytics</div>
-            <NavLink 
-              to="/revenue" 
-              className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-            >
-              <i className="bi bi-wallet2"></i> Revenue & Expenses
-            </NavLink>
-            <NavLink 
-              to="/analytics" 
-              className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-            >
-              <i className="bi bi-bar-chart"></i> Analytics
-            </NavLink>
 
             <div className="nav-section-title">Administration</div>
             <NavLink 
@@ -130,19 +120,6 @@ function Sidebar() {
               <i className="bi bi-gear"></i> Settings
             </NavLink>
 
-            <div className="nav-section-title">Custom Modules</div>
-            <NavLink 
-              to="/inventory-management" 
-              className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-            >
-              <i className="bi bi-box-seam-fill"></i> Inventory Management
-            </NavLink>
-            <NavLink 
-              to="/user-administration" 
-              className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-            >
-              <i className="bi bi-people-fill"></i> User Administration
-            </NavLink>
           </>
         )}
 
